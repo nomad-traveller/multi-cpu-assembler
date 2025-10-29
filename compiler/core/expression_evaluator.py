@@ -1,0 +1,45 @@
+"""
+An AST-based expression evaluator. It recursively walks the AST generated
+by the expression parser and computes the final value.
+"""
+from .expression_parser import BinOp, UnaryOp, Number, Symbol
+
+def evaluate_expression(node, symbol_table, line_num):
+    """
+    Recursively evaluates an expression AST node.
+    """
+    if node is None:
+        return None
+    if isinstance(node, Number):
+        return node.value
+    if isinstance(node, Symbol):
+        value = symbol_table.resolve(node.name)
+        if value is None:
+            raise ValueError(f"Undefined symbol '{node.name}' on line {line_num}")
+        return value
+    if isinstance(node, UnaryOp):
+        right = evaluate_expression(node.right, symbol_table, line_num)
+        if node.op == '-':
+            return -right
+        if node.op == '<':
+            return right & 0xFF
+        if node.op == '>':
+            return (right >> 8) & 0xFF
+    if isinstance(node, BinOp):
+        left = evaluate_expression(node.left, symbol_table, line_num)
+        right = evaluate_expression(node.right, symbol_table, line_num)
+        if node.op == '+': return left + right
+        if node.op == '-': return left - right
+        if node.op == '*': return left * right
+        if node.op == '/': return left // right
+        if node.op == '&': return left & right
+        if node.op == '|': return left | right
+        if node.op == '^': return left ^ right
+        if node.op == '<<': return left << right
+        if node.op == '>>': return left >> right
+    
+    # This case handles a raw integer passed in (e.g. from an old part of the code)
+    if isinstance(node, int):
+        return node
+        
+    raise ValueError(f"Unknown AST node type: {type(node).__name__} on line {line_num}")
