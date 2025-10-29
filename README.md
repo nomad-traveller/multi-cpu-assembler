@@ -124,14 +124,17 @@ python -m unittest discover tests/
 ### Building Examples
 
 ```bash
+cd compiler
+source .venv/bin/activate
+
 # 65C02 example
-python compiler/main.py examples/mcu65c02.s -o examples/mcu65c02.bin --cpu 65c02
+python main.py examples/mcu65c02.s -o examples/mcu65c02.bin --cpu 65c02
 
 # 6800 example
-python compiler/main.py examples/mcu6800.s -o examples/mcu6800.bin --cpu 6800
+python main.py examples/mcu6800.s -o examples/mcu6800.bin --cpu 6800
 
 # 8086 example
-python compiler/main.py examples/hello_8086.s -o examples/hello_8086.bin --cpu 8086
+python main.py examples/hello_8086.s -o examples/hello_8086.bin --cpu 8086
 ```
 
 ## Command Line Options
