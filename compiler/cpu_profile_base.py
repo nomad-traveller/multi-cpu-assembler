@@ -59,6 +59,13 @@ class JSONCPUProfile:
         """Get enum value for addressing mode name."""
         return self.addressing_modes.get(mode_name)
     
+    def get_addressing_mode_name(self, mode_enum: Any) -> str | None:
+        """Get addressing mode name from enum value."""
+        for name, value in self.addressing_modes.items():
+            if value == mode_enum:
+                return name
+        return None
+    
     def parse_addressing_mode(self, operand_str: str) -> tuple[Any, Any]:
         """Parse addressing mode using JSON patterns."""
         operand_str = operand_str.strip().upper()
@@ -154,11 +161,7 @@ class JSONCPUProfile:
         mode = instruction.mode
         
         # Convert mode enum to string for lookup
-        mode_name = None
-        for name, value in self.addressing_modes.items():
-            if value == mode:
-                mode_name = name
-                break
+        mode_name = self.get_addressing_mode_name(mode)
         
         if not mode_name:
             return
@@ -213,11 +216,7 @@ class JSONCPUProfile:
             return None
         
         # Convert mode enum to string for lookup
-        mode_name = None
-        for name, value in self.addressing_modes.items():
-            if value == mode:
-                mode_name = name
-                break
+        mode_name = self.get_addressing_mode_name(mode)
         
         if mode_name and mode_name in self.opcodes[mnemonic]:
             return self.opcodes[mnemonic][mode_name]
@@ -251,11 +250,7 @@ class JSONCPUProfile:
         operand_value = instruction.operand_value
         
         # Convert mode enum to string for lookup
-        mode_name = None
-        for name, value in self.addressing_modes.items():
-            if value == mode:
-                mode_name = name
-                break
+        mode_name = self.get_addressing_mode_name(mode)
         
         if not mode_name:
             return True
