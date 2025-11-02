@@ -1,19 +1,21 @@
 # Multi-CPU Assembler
 
-A modular, extensible assembler supporting multiple CPU architectures including 65C02, 6800, and 8086. Built with Python for educational and development purposes.
+A modular, extensible assembler supporting multiple CPU architectures through JSON-based CPU profiles. Currently supports 65C02 and Motorola 6800 with easy extensibility for additional architectures.
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-20%20passing-brightgreen.svg)](tests/)
 
 ## Features
 
-- **Multi-CPU Support**: Currently supports 65C02, Motorola 6800, and Intel 8086 architectures
-- **Modular Architecture**: Easy to extend with new CPU profiles
+- **JSON-Driven CPU Profiles**: CPU architectures defined in flexible JSON format
+- **Multi-CPU Support**: Currently supports 65C02 and Motorola 6800 architectures
+- **Easy Extensibility**: Add new CPUs by creating JSON profiles - no code changes needed
 - **Two-Pass Assembly**: Efficient symbol resolution and error detection
 - **Enhanced Error Reporting**: Detailed warnings and error messages for common assembly mistakes
 - **Expression Evaluation**: Support for complex expressions with operators and symbols
-- **Multiple Output Formats**: Raw binary output with plans for additional formats
-- **Comprehensive Testing**: Full test suite with CPU-specific validation
+- **Comprehensive Testing**: Full test suite with JSON profile validation
+- **Independent Testing**: JSON profiles can be validated without running the assembler
 
 ## Quick Start
 
@@ -62,23 +64,23 @@ START:  LDA #$48        ; 'H'
 ## Supported CPUs
 
 ### 65C02 (Enhanced 6502)
-- Full 65C02 instruction set
-- All addressing modes
-- Enhanced error checking for common 6502 mistakes
+- **JSON Profile**: `compiler/cpu_profiles/65c02.json`
+- **Instructions**: 64 mnemonics, 178 total opcodes
+- **Addressing Modes**: 14 modes (IMPLIED, IMMEDIATE, ABSOLUTE, etc.)
+- **Features**: Full 65C02 instruction set with enhanced error checking
 
 ### Motorola 6800
-- Complete 6800 instruction set
-- Accumulator and index register operations
-- Page zero optimization hints
+- **JSON Profile**: `compiler/cpu_profiles/6800.json`
+- **Instructions**: 27 mnemonics, 61 total opcodes
+- **Addressing Modes**: 8 modes (INHERENT, IMMEDIATE, EXTENDED, etc.)
+- **Features**: Complete 6800 instruction set with accumulator operations
 
-### Intel 8086
-- 16-bit instruction set
-- Segment register handling
-- Memory and register operations
+### Adding New CPUs
+New CPU architectures can be added by creating JSON profiles in `compiler/cpu_profiles/`. No code changes required! See `TESTING.md` for JSON profile validation tools.
 
 ## Architecture
 
-The assembler follows a clean, modular architecture:
+The assembler follows a clean, modular architecture with JSON-driven CPU profiles:
 
 ```
 main.py (Entry Point)
@@ -86,17 +88,19 @@ main.py (Entry Point)
 ├── assembler.py (Two-pass assembly)
 ├── emitter.py (Output generation)
 ├── diagnostics.py (Error reporting)
-└── cpu_profiles/ (CPU-specific logic)
-    ├── c6502/
-    ├── c6800/
-    └── c8086/
+├── cpu_profile_base.py (JSON profile loader)
+└── cpu_profiles/ (JSON CPU definitions)
+    ├── 65c02.json
+    ├── 6800.json
+    └── [new_cpu].json (add your own!)
 ```
 
 ### Key Components
 
 - **Parser**: Converts assembly source into structured instructions
 - **Assembler**: Performs two-pass assembly with symbol resolution
-- **CPU Profiles**: Encapsulate CPU-specific behavior (opcodes, addressing modes, validation)
+- **JSONCPUProfile**: Loads and validates JSON CPU profiles
+- **CPU Profiles**: JSON files defining opcodes, addressing modes, and validation rules
 - **Expression Evaluator**: Handles complex expressions and symbol resolution
 - **Diagnostics**: Centralized error and warning reporting
 
@@ -104,22 +108,52 @@ main.py (Entry Point)
 
 ### Adding New CPU Support
 
-The assembler is designed for easy extension. To add a new CPU:
+The assembler is designed for easy extension through JSON profiles. To add a new CPU:
 
-1. Create opcode definitions in `compiler/cpu_profiles/newcpu/opcodes_newcpu.py`
-2. Implement CPU profile class in `compiler/cpu_profiles/newcpu/newcpu_profile.py`
-3. Register the profile in `compiler/main.py`
-4. Add tests in `compiler/tests/test_newcpu.py`
+1. **Create JSON Profile**: Add `new_cpu.json` in `compiler/cpu_profiles/`
+2. **Define CPU Info**: Include name, description, data width, address width
+3. **Specify Addressing Modes**: List all addressing modes with enum values
+4. **Add Opcodes**: Define all instructions with their opcodes, cycles, and flags
+5. **Include Validation Rules**: Specify addressing patterns and directives
+6. **Validate**: Use `python validate_json_profiles.py --all` to test
 
-See `compiler/assembler.md` for detailed instructions.
+**Example JSON Structure**:
+```json
+{
+  "cpu_info": {
+    "name": "NEW_CPU",
+    "description": "New CPU Architecture",
+    "data_width": 8,
+    "address_width": 16
+  },
+  "addressing_modes": {
+    "IMPLIED": 0,
+    "IMMEDIATE": 1
+  },
+  "opcodes": {
+    "NOP": {
+      "IMPLIED": {"opcode": 0x00, "cycles": 2}
+    }
+  }
+}
+```
+
+See `TESTING.md` for JSON validation tools and detailed instructions.
 
 ### Running Tests
 
 ```bash
-cd compiler
-source .venv/bin/activate
-python -m unittest discover tests/
+# Run all tests
+. compiler/.venv/bin/activate && python -m unittest discover -s tests -p "test_*.py"
+
+# Validate JSON CPU profiles
+python validate_json_profiles.py --all
+
+# Interactive JSON testing
+python test_json_interactive.py
 ```
+
+See `TESTING.md` for comprehensive testing documentation.
 
 ### Building Examples
 
@@ -140,7 +174,7 @@ python main.py examples/hello_8086.s -o examples/hello_8086.bin --cpu 8086
 ## Command Line Options
 
 ```
-usage: main.py [-h] [--cpu {65c02,6800,8086}] [--start-address START_ADDRESS]
+usage: main.py [-h] [--cpu {65c02,6800}] [--start-address START_ADDRESS]
                [--output OUTPUT] [--log-file LOG_FILE]
                source_file
 
@@ -151,8 +185,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --cpu {65c02,6800,8086}
-                        Target CPU architecture
+  --cpu {65c02,6800}    Target CPU architecture
   --start-address START_ADDRESS
                         Starting address (default: 0x0000)
   --output OUTPUT       Output binary file
@@ -186,14 +219,25 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Testing and Validation
+
+This project includes comprehensive testing tools:
+
+- **Unit Tests**: 20 tests covering JSON profiles, assembly workflow, and CLI
+- **JSON Validation**: Standalone tools for validating CPU profiles
+- **Interactive Testing**: Real-time testing of addressing modes and opcodes
+- **End-to-End Testing**: Complete assembly workflow validation
+
+See `TESTING.md` for detailed testing documentation and usage examples.
+
 ## Roadmap
 
-- [ ] Add Z80 CPU support
+- [ ] Add Z80 CPU support (JSON profile)
 - [ ] Implement macro system
 - [ ] Add conditional assembly
-- [ ] Support additional output formats
+- [ ] Support additional output formats (Intel HEX, S-record)
 - [ ] IDE integration features
-- [ ] Web-based interface
+- [ ] Web-based interface for JSON profile creation
 
 ## Acknowledgments
 
