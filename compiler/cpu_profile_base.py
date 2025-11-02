@@ -63,7 +63,7 @@ class JSONCPUProfile:
         """Parse addressing mode using JSON patterns."""
         operand_str = operand_str.strip().upper()
         if not operand_str:
-            return (self.get_addressing_mode_enum("IMPLIED"), None)
+            return (self.get_addressing_mode_enum("INHERENT"), None)
         
         for pattern_info in self.addressing_mode_patterns:
             pattern = pattern_info["pattern"]
@@ -90,27 +90,58 @@ class JSONCPUProfile:
                         value = int(val_str)
                     else:
                         value = val_str
+                elif mode_name in ["ACCUMULATOR_A", "ACCUMULATOR_B"]:
+                    # For accumulator modes, value is None
+                    value = None
+                else:
+                    # For patterns without group_idx, process the full operand_str
+                    val_str = operand_str
+                    # Remove syntax characters
+                    val_str = re.sub(r'[#(),X]', '', val_str)
+                    # Handle hex values
+                    if val_str.startswith('$'):
+                        val_str = val_str[1:]
+                        try:
+                            value = int(val_str, 16)
+                        except ValueError:
+                            value = val_str
+                    else:
+                        try:
+                            value = int(val_str)
+                        except ValueError:
+                            # It's a label
+                            value = val_str.strip()
                 
                 return (mode, value)
         
-        return (None, None)
+        raise ValueError(f"Invalid operand: {operand_str}")
     
     def parse_instruction(self, instruction, parser: 'Parser') -> None:
         """Parse CPU instruction using JSON configuration."""
         operand_str = instruction.operand_str
+        mnemonic = instruction.mnemonic
         
         if not operand_str:
-            instruction.mode = self.get_addressing_mode_enum("IMPLIED")
+            # Check if this mnemonic is an inherent instruction
+            mode, _ = self.parse_addressing_mode(mnemonic)
+            if mode is not None:
+                instruction.mode = mode
+            else:
+                instruction.mode = self.get_addressing_mode_enum("IMPLIED")
             return
 
         expression_str = operand_str
         if operand_str.startswith('#'):
             expression_str = operand_str[1:]
 
-        mode, _ = self.parse_addressing_mode(operand_str)
+        mode, extracted_value = self.parse_addressing_mode(operand_str)
         if mode:
             instruction.mode = mode
-            instruction.operand_value = parser.parse_operand_list(expression_str)[0]
+            # For indexed addressing, use the extracted value (before ",X")
+            if mode == self.get_addressing_mode_enum("INDEXED") and extracted_value:
+                instruction.operand_value = parser.parse_operand_list(extracted_value)[0]
+            else:
+                instruction.operand_value = parser.parse_operand_list(expression_str)[0]
         else:
             raise ValueError(f"Could not determine addressing mode for operand: {operand_str}")
 
@@ -191,6 +222,26 @@ class JSONCPUProfile:
         if mode_name and mode_name in self.opcodes[mnemonic]:
             return self.opcodes[mnemonic][mode_name]
         
+        # Handle automatic mode conversion (e.g., 6800 EXTENDED to DIRECT)
+        post_processing = self._profile_data.get("post_processing", {})
+        auto_conversion = post_processing.get("automatic_mode_conversion", [])
+        
+        for rule in auto_conversion:
+            if (mode_name == rule["from_mode"] and 
+                mnemonic in self.opcodes):
+                condition = rule.get("condition")
+                if condition:
+                    # Simple condition evaluation for mode conversion
+                    target_mode = rule["to_mode"]
+                    if target_mode in self.opcodes[mnemonic]:
+                        instruction.mode = self.get_addressing_mode_enum(target_mode)
+                        return self.opcodes[mnemonic][target_mode]
+                elif isinstance(instruction.operand_value, int) and instruction.operand_value <= rule["threshold"]:
+                    target_mode = rule["to_mode"]
+                    if target_mode in self.opcodes[mnemonic]:
+                        instruction.mode = self.get_addressing_mode_enum(target_mode)
+                        return self.opcodes[mnemonic][target_mode]
+        
         return None
     
     def validate_instruction(self, instruction) -> bool:
@@ -213,34 +264,42 @@ class JSONCPUProfile:
         accumulator_only = self.validation_rules.get("accumulator_only", {})
         if mnemonic in accumulator_only and mode_name in accumulator_only[mnemonic]:
             self.diagnostics.error(instruction.line_num,
-                f"Instruction '{mnemonic}' does not support {mode_name.lower()} addressing mode. Use accumulator mode (A) instead.")
+                f"Instruction '{mnemonic}' must use inherent addressing (no operands).")
             return False
         
-        # Check branch instructions
-        branch_relative = self.validation_rules.get("branch_relative_only", {})
-        if mnemonic in branch_relative and mode_name in branch_relative[mnemonic]:
+        # Check inherent-only instructions
+        inherent_only = self.validation_rules.get("inherent_only", {})
+        if mnemonic in inherent_only and mode_name not in inherent_only[mnemonic]:
             self.diagnostics.error(instruction.line_num,
-                f"Branch instruction '{mnemonic}' cannot use {mode_name.lower()} addressing. Branches are always relative.")
+                f"Instruction '{mnemonic}' must use inherent addressing (no operands).")
             return False
         
-        # Check register warnings
-        register_warnings = self.validation_rules.get("register_warnings", {})
-        if mnemonic in register_warnings and operand_value in register_warnings[mnemonic]:
+        # Check branch instruction valid modes
+        branch_valid_modes = self.validation_rules.get("branch_valid_modes", {})
+        if mnemonic in branch_valid_modes and mode_name not in branch_valid_modes[mnemonic]:
+            valid_modes = ", ".join(branch_valid_modes[mnemonic])
+            self.diagnostics.error(instruction.line_num,
+                f"Branch instruction '{mnemonic}' requires {valid_modes} addressing.")
+            return False
+        
+        # Check inherent warnings
+        inherent_warnings = self.validation_rules.get("inherent_warnings", {})
+        if mnemonic in inherent_warnings and mode_name not in inherent_warnings[mnemonic]:
             self.diagnostics.warning(instruction.line_num,
-                f"Instruction '{mnemonic}' uses {operand_value} register, but operand suggests {register_warnings[mnemonic][0]} register usage.")
+                f"Instruction '{mnemonic}' typically uses inherent addressing. Operands may be ignored.")
         
         # Check optimization hints
         optimization = self.validation_rules.get("optimization_hints", {})
         
-        # Zero page optimization
-        if "zeropage_optimization" in optimization:
-            zp_opt = optimization["zeropage_optimization"]
-            if (mnemonic in zp_opt["mnemonics"] and 
-                mode_name == "ABSOLUTE" and 
+        # Direct page optimization (6800 equivalent of zeropage)
+        if "direct_page_optimization" in optimization:
+            dp_opt = optimization["direct_page_optimization"]
+            if (mnemonic in dp_opt["mnemonics"] and 
+                mode_name == "EXTENDED" and 
                 isinstance(operand_value, int) and 
-                operand_value <= zp_opt["threshold"]):
+                operand_value <= dp_opt["threshold"]):
                 self.diagnostics.warning(instruction.line_num,
-                    zp_opt["message"].format(value=operand_value))
+                    dp_opt["message"].format(value=operand_value))
         
         # Immediate range check
         if "immediate_range_check" in optimization:
@@ -248,19 +307,11 @@ class JSONCPUProfile:
             if (mode_name == "IMMEDIATE" and 
                 isinstance(operand_value, int) and 
                 operand_value > imm_check["max_value"]):
-                self.diagnostics.error(instruction.line_num,
-                    imm_check["message"].format(value=operand_value))
-                return False
-        
-        # JMP indirect warning
-        if "jmp_indirect_warning" in optimization:
-            jmp_warn = optimization["jmp_indirect_warning"]
-            if (mnemonic == "JMP" and 
-                mode_name == "INDIRECT" and 
-                isinstance(operand_value, int) and 
-                eval(jmp_warn["condition"].replace("value", str(operand_value)))):
-                self.diagnostics.warning(instruction.line_num,
-                    jmp_warn["message"].format(value=operand_value))
+                exceptions = imm_check.get("exceptions", [])
+                if mnemonic not in exceptions:
+                    self.diagnostics.error(instruction.line_num,
+                        imm_check["message"].format(value=operand_value, mnemonic=mnemonic))
+                    return False
         
         return True
     
@@ -310,11 +361,4 @@ class JSONCPUProfile:
         return True
 
 
-class CPUProfile(JSONCPUProfile):
-    """Backward compatibility class."""
-    
-    def __init__(self, diagnostics, json_file_path: str | None = None):
-        if json_file_path:
-            super().__init__(diagnostics, json_file_path)
-        else:
-            self.diagnostics = diagnostics
+

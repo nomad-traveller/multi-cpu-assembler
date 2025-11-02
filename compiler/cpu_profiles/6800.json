@@ -1,0 +1,276 @@
+{
+  "cpu_info": {
+    "name": "6800",
+    "description": "Motorola 6800 8-bit microprocessor",
+    "data_width": 8,
+    "address_width": 16,
+    "endianness": "big"
+  },
+  "addressing_modes": {
+    "INHERENT": 0,
+    "ACCUMULATOR_A": 1,
+    "ACCUMULATOR_B": 2,
+    "IMMEDIATE": 3,
+    "DIRECT": 4,
+    "EXTENDED": 5,
+    "INDEXED": 6,
+    "RELATIVE": 7
+  },
+  "addressing_mode_patterns": [
+    {
+      "pattern": "^(ABA|CBA|SBA|CLR|INX|DEX|INX|NOP|RTS|RTI|TAP|TPA|TSX|TXS)$",
+      "mode": "INHERENT",
+      "group_index": null,
+      "flags": ["IGNORECASE"]
+    },
+    {
+      "pattern": "^[aA]$",
+      "mode": "ACCUMULATOR_A",
+      "group_index": null
+    },
+    {
+      "pattern": "^[bB]$",
+      "mode": "ACCUMULATOR_B",
+      "group_index": null
+    },
+    {
+      "pattern": "^#",
+      "mode": "IMMEDIATE",
+      "group_index": null
+    },
+    {
+      "pattern": "^(.+),X$",
+      "mode": "INDEXED",
+      "group_index": 1,
+      "flags": ["IGNORECASE"]
+    },
+    {
+      "pattern": "^\\$[0-9A-F]{1,2}$",
+      "mode": "DIRECT",
+      "group_index": 0
+    },
+    {
+      "pattern": "^\\$[0-9A-F]{3,4}$",
+      "mode": "EXTENDED",
+      "group_index": 0
+    },
+    {
+      "pattern": "^[0-9]{1,3}$",
+      "mode": "DIRECT",
+      "group_index": 0
+    },
+    {
+      "pattern": "^[0-9]{4,5}$",
+      "mode": "EXTENDED",
+      "group_index": 0
+    },
+    {
+      "pattern": "^(?!ABA|CBA|SBA|CLR|INX|DEX|INX|NOP|RTS|RTI|TAP|TPA|TSX|TXS$)[A-Z_][A-Z0-9_]*$",
+      "mode": "EXTENDED",
+      "group_index": 0,
+      "flags": ["IGNORECASE"]
+    }
+  ],
+  "branch_mnemonics": ["BCC", "BCS", "BEQ", "BGE", "BGT", "BHI", "BLE", "BLS", "BLT", "BMI", "BNE", "BPL", "BRA", "BSR", "BVC", "BVS"],
+  "opcodes": {
+    "LDAA": {
+      "IMMEDIATE": [134, 1, {}, "NZV"],
+      "DIRECT": [150, 1, {}, "NZV"],
+      "EXTENDED": [182, 2, {}, "NZV"],
+      "INDEXED": [166, 1, {}, "NZV"]
+    },
+    "LDAB": {
+      "IMMEDIATE": [198, 1, {}, "NZV"],
+      "DIRECT": [214, 1, {}, "NZV"],
+      "EXTENDED": [246, 2, {}, "NZV"],
+      "INDEXED": [230, 1, {}, "NZV"]
+    },
+    "STAA": {
+      "DIRECT": [151, 1, {}, "NZV"],
+      "EXTENDED": [183, 2, {}, "NZV"],
+      "INDEXED": [167, 1, {}, "NZV"]
+    },
+    "STAB": {
+      "DIRECT": [215, 1, {}, "NZV"],
+      "EXTENDED": [247, 2, {}, "NZV"],
+      "INDEXED": [231, 1, {}, "NZV"]
+    },
+    "ADDA": {
+      "IMMEDIATE": [135, 1, {}, "NZVC"],
+      "DIRECT": [151, 1, {}, "NZVC"],
+      "EXTENDED": [183, 2, {}, "NZVC"],
+      "INDEXED": [167, 1, {}, "NZVC"]
+    },
+    "ADDB": {
+      "IMMEDIATE": [199, 1, {}, "NZVC"],
+      "DIRECT": [215, 1, {}, "NZVC"],
+      "EXTENDED": [247, 2, {}, "NZVC"],
+      "INDEXED": [231, 1, {}, "NZVC"]
+    },
+    "SUBA": {
+      "IMMEDIATE": [136, 1, {}, "NZVC"],
+      "DIRECT": [152, 1, {}, "NZVC"],
+      "EXTENDED": [184, 2, {}, "NZVC"],
+      "INDEXED": [168, 1, {}, "NZVC"]
+    },
+    "SUBB": {
+      "IMMEDIATE": [200, 1, {}, "NZVC"],
+      "DIRECT": [216, 1, {}, "NZVC"],
+      "EXTENDED": [248, 2, {}, "NZVC"],
+      "INDEXED": [232, 1, {}, "NZVC"]
+    },
+    "CMPA": {
+      "IMMEDIATE": [137, 1, {}, "NZVC"],
+      "DIRECT": [153, 1, {}, "NZVC"],
+      "EXTENDED": [185, 2, {}, "NZVC"],
+      "INDEXED": [169, 1, {}, "NZVC"]
+    },
+    "CMPB": {
+      "IMMEDIATE": [201, 1, {}, "NZVC"],
+      "DIRECT": [217, 1, {}, "NZVC"],
+      "EXTENDED": [249, 2, {}, "NZVC"],
+      "INDEXED": [233, 1, {}, "NZVC"]
+    },
+    "JMP": {
+      "EXTENDED": [126, 2, {}, ""],
+      "INDEXED": [110, 1, {}, ""]
+    },
+    "JSR": {
+      "EXTENDED": [189, 2, {}, ""],
+      "INDEXED": [173, 1, {}, ""]
+    },
+    "BRA": {
+      "RELATIVE": [32, 1, {}, ""]
+    },
+    "BNE": {
+      "RELATIVE": [38, 1, {}, ""]
+    },
+    "BEQ": {
+      "RELATIVE": [39, 1, {}, ""]
+    },
+    "BCC": {
+      "RELATIVE": [36, 1, {}, ""]
+    },
+    "BCS": {
+      "RELATIVE": [37, 1, {}, ""]
+    },
+    "BMI": {
+      "RELATIVE": [43, 1, {}, ""]
+    },
+    "BPL": {
+      "RELATIVE": [42, 1, {}, ""]
+    },
+    "BVC": {
+      "RELATIVE": [40, 1, {}, ""]
+    },
+    "BVS": {
+      "RELATIVE": [41, 1, {}, ""]
+    },
+    "LDX": {
+      "IMMEDIATE": [206, 2, {}, "NZV"],
+      "DIRECT": [222, 1, {}, "NZV"],
+      "EXTENDED": [254, 2, {}, "NZV"],
+      "INDEXED": [238, 1, {}, "NZV"]
+    },
+    "DEX": {
+      "INHERENT": [9, 0, {}, "Z"]
+    },
+    "CLR": {
+      "EXTENDED": [127, 2, {}, "NZVC"],
+      "INDEXED": [111, 1, {}, "NZVC"]
+    },
+    "INX": {
+      "INHERENT": [8, 0, {}, "Z"]
+    },
+    "NOP": {
+      "INHERENT": [1, 0, {}, ""]
+    },
+    "RTS": {
+      "INHERENT": [57, 0, {}, ""]
+    }
+  },
+  "directives": {
+    ".ORG": {
+      "description": "Set origin address",
+      "operand_count": 1,
+      "operand_type": "expression"
+    },
+    ".BYTE": {
+      "description": "Define byte data",
+      "operand_count": "variable",
+      "operand_type": "expression_list",
+      "size_multiplier": 1
+    },
+    ".WORD": {
+      "description": "Define word data",
+      "operand_count": "variable",
+      "operand_type": "expression_list",
+      "size_multiplier": 2
+    },
+    "EQU": {
+      "description": "Equate symbol to value",
+      "operand_count": 1,
+      "operand_type": "expression",
+      "size": 0
+    }
+  },
+  "post_processing": {
+    "branch_instructions": {
+      "mnemonics": ["BCC", "BCS", "BEQ", "BGE", "BGT", "BHI", "BLE", "BLS", "BLT", "BMI", "BNE", "BPL", "BRA", "BSR", "BVC", "BVS"],
+      "force_mode": "RELATIVE"
+    },
+    "automatic_mode_conversion": [
+      {
+        "from_mode": "EXTENDED",
+        "to_mode": "DIRECT",
+        "threshold": 255,
+        "condition": "mode == EXTENDED and DIRECT in opcodes[mnemonic]"
+      }
+    ]
+  },
+  "validation_rules": {
+    "inherent_only": {
+      "ABA": ["INHERENT"],
+      "CBA": ["INHERENT"],
+      "SBA": ["INHERENT"]
+    },
+    "branch_valid_modes": {
+      "BCC": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BCS": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BEQ": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BGE": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BGT": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BHI": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BLE": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BLS": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BLT": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BMI": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BNE": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BPL": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BRA": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BSR": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BVC": ["RELATIVE", "DIRECT", "EXTENDED"],
+      "BVS": ["RELATIVE", "DIRECT", "EXTENDED"]
+    },
+    "inherent_warnings": {
+      "TAP": ["INHERENT"],
+      "TPA": ["INHERENT"],
+      "TSX": ["INHERENT"],
+      "TXS": ["INHERENT"],
+      "RTS": ["INHERENT"],
+      "RTI": ["INHERENT"]
+    },
+    "optimization_hints": {
+      "direct_page_optimization": {
+        "mnemonics": ["LDAA", "LDAB", "STAA", "LDX", "CLR"],
+        "threshold": 255,
+        "message": "Using extended addressing for direct-page value ${value:02X}. Consider using direct addressing for better performance."
+      },
+      "immediate_range_check": {
+        "max_value": 255,
+        "message": "Immediate value ${value:04X} is too large for 8-bit immediate in instruction '{mnemonic}'.",
+        "exceptions": ["LDX", "STX", "CPX", "LDS", "STS", "CPS"]
+      }
+    }
+  }
+}

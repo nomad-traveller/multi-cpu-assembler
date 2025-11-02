@@ -1,11 +1,11 @@
-from cpu_profile_base import CPUProfile
+from cpu_profile_base import JSONCPUProfile
 from .symbol_table import SymbolTable
 from .diagnostics import Diagnostics
 from .program import Program
 from .expression_evaluator import evaluate_expression
 
 class Assembler:
-    def __init__(self, cpu_profile: 'CPUProfile', symbol_table: 'SymbolTable', diagnostics: 'Diagnostics'):
+    def __init__(self, cpu_profile: JSONCPUProfile, symbol_table: 'SymbolTable', diagnostics: 'Diagnostics'):
         self.cpu_profile = cpu_profile
         self.symbol_table = symbol_table
         self.diagnostics = diagnostics
@@ -45,7 +45,11 @@ class Assembler:
                 if details:
                     instr.size = 1 + details[1]
                 else:
-                    mode_name = instr.mode.name if instr.mode else "UNKNOWN"
+                    if hasattr(instr.mode, 'name'):
+                        mode_name = instr.mode.name
+                    else:
+                        # For JSON profiles, mode is an integer
+                        mode_name = f"MODE_{instr.mode}" if instr.mode is not None else "UNKNOWN"
                     self.diagnostics.error(instr.line_num, f"Invalid mnemonic '{instr.mnemonic}' or addressing mode '{mode_name}'.")
                     instr.size = 0
                     return False
