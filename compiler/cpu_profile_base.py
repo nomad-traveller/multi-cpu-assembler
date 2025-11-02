@@ -10,12 +10,27 @@ if TYPE_CHECKING:
     from core.parser import Parser
 
 
+def create_addressing_mode_enum(cpu_name: str, addressing_modes: dict):
+    """Create a dynamic Enum for addressing modes based on CPU profile."""
+    enum_name = f"{cpu_name.upper()}AddressingMode"
+    
+    # Create enum members with their integer values
+    enum_members = {}
+    for mode_name, mode_value in addressing_modes.items():
+        # Convert to valid Python enum member name
+        member_name = mode_name.upper().replace(' ', '_')
+        enum_members[member_name] = mode_value
+    
+    return Enum(enum_name, enum_members)
+
+
 class JSONCPUProfile:
     """JSON-based CPU Profile that loads configuration from JSON files."""
     
     def __init__(self, diagnostics, json_file_path: str):
         self.diagnostics = diagnostics
         self._load_profile(json_file_path)
+        self._create_addressing_mode_enum()
     
     def _load_profile(self, json_file_path: str):
         """Load CPU profile from JSON file."""
@@ -26,6 +41,12 @@ class JSONCPUProfile:
             raise FileNotFoundError(f"CPU profile file not found: {json_file_path}")
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in CPU profile {json_file_path}: {e}")
+    
+    def _create_addressing_mode_enum(self):
+        """Create dynamic Enum for addressing modes."""
+        cpu_name = self.cpu_info.get("name", "CPU")
+        addressing_modes = self._profile_data["addressing_modes"]
+        self.AddressingMode = create_addressing_mode_enum(cpu_name, addressing_modes)
     
     @property
     def cpu_info(self) -> dict:
@@ -41,6 +62,7 @@ class JSONCPUProfile:
     
     @property
     def addressing_modes(self) -> dict[str, int]:
+        """Legacy property for backward compatibility."""
         return self._profile_data["addressing_modes"]
     
     @property
@@ -57,14 +79,29 @@ class JSONCPUProfile:
     
     def get_addressing_mode_enum(self, mode_name: str) -> Any:
         """Get enum value for addressing mode name."""
-        return self.addressing_modes.get(mode_name)
+        # Convert mode name to enum member name
+        member_name = mode_name.upper().replace(' ', '_')
+        try:
+            return getattr(self.AddressingMode, member_name)
+        except AttributeError:
+            # Fallback to dictionary for backward compatibility
+            return self.addressing_modes.get(mode_name)
     
     def get_addressing_mode_name(self, mode_enum: Any) -> str | None:
         """Get addressing mode name from enum value."""
-        for name, value in self.addressing_modes.items():
-            if value == mode_enum:
-                return name
-        return None
+        # If it's an Enum member, get its name
+        if hasattr(mode_enum, 'name'):
+            return mode_enum.name.replace('_', ' ')
+        
+        # If it's an integer value, look up in dictionary
+        if isinstance(mode_enum, int):
+            for name, value in self.addressing_modes.items():
+                if value == mode_enum:
+                    return name
+            return None
+        
+        # Fallback: try to convert to string
+        return str(mode_enum) if mode_enum else None
     
     def parse_addressing_mode(self, operand_str: str) -> tuple[Any, Any]:
         """Parse addressing mode using JSON patterns (optimized for 8-bit CPUs)."""
@@ -364,7 +401,8 @@ class JSONCPUProfile:
                     raise ValueError(f"Mnemonic '{mnemonic}' requires an operand but none was provided.")
                 if operand_size == 1:
                     # Handle relative branches
-                    if mode == self.get_addressing_mode_enum("RELATIVE"):
+                    relative_mode = self.get_addressing_mode_enum("RELATIVE")
+                    if mode == relative_mode:
                         offset = val - (instruction.address + 2)
                         if not -128 <= offset <= 127:
                             raise ValueError(f"Branch offset out of range: {offset}")

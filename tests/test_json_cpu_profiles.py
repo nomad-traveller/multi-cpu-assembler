@@ -93,9 +93,11 @@ class TestJSONCPUProfile(unittest.TestCase):
             profile = JSONCPUProfile(self.diagnostics, "test_profile.json")
             
         modes = profile.get_addressing_mode_enum("IMMEDIATE")
-        self.assertEqual(modes, 1)
+        self.assertEqual(modes.value, 1)  # Enum value
+        self.assertEqual(modes.name, "IMMEDIATE")  # Enum name
         modes = profile.get_addressing_mode_enum("IMPLIED")
-        self.assertEqual(modes, 0)
+        self.assertEqual(modes.value, 0)  # Enum value
+        self.assertEqual(modes.name, "IMPLIED")  # Enum name
 
     def test_get_opcode_details(self):
         """Test getting opcode information"""
@@ -119,17 +121,20 @@ class TestJSONCPUProfile(unittest.TestCase):
             
         # Test immediate mode
         mode, value = profile.parse_addressing_mode("#$FF")
-        self.assertEqual(mode, 1)  # IMMEDIATE
+        self.assertEqual(mode.value, 1)  # IMMEDIATE enum value
+        self.assertEqual(mode.name, "IMMEDIATE")  # Enum name
         self.assertEqual(value, 255)  # Should be converted to int
         
         # Test absolute mode
         mode, value = profile.parse_addressing_mode("$1234")
-        self.assertEqual(mode, 2)  # ABSOLUTE
+        self.assertEqual(mode.value, 2)  # ABSOLUTE enum value
+        self.assertEqual(mode.name, "ABSOLUTE")  # Enum name
         self.assertEqual(value, 0x1234)
         
         # Test implied mode
         mode, value = profile.parse_addressing_mode("NOP")
-        self.assertEqual(mode, 0)  # IMPLIED
+        self.assertEqual(mode.value, 0)  # IMPLIED enum value
+        self.assertEqual(mode.name, "IMPLIED")  # Enum name
         # For implied mode with group_index=None, value is the full operand
         self.assertEqual(value, "NOP")
 
@@ -168,7 +173,15 @@ class TestCPUProfileFactory(unittest.TestCase):
 
     @patch('os.path.exists')
     @patch('os.listdir')
-    @patch('builtins.open', mock_open(read_data='{"cpu_info": {"name": "65C02"}}'))
+    @patch('builtins.open', mock_open(read_data=json.dumps({
+        "cpu_info": {"name": "65C02", "description": "Test CPU", "data_width": 8, "address_width": 16},
+        "addressing_modes": {"IMPLIED": 0, "IMMEDIATE": 1},
+        "opcodes": {"NOP": {"IMPLIED": [0xEA, 0, {"base": 2}, ""]}},
+        "branch_mnemonics": [],
+        "addressing_mode_patterns": [],
+        "directives": {},
+        "validation_rules": {}
+    })))
     def test_create_profile_success(self, mock_listdir, mock_exists):
         """Test successful profile creation"""
         mock_exists.return_value = True
