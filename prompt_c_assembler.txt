@@ -1,0 +1,445 @@
+# Multi-CPU Assembler in C - Project Creation Prompt
+
+## Overview
+Create a comprehensive multi-CPU assembler in C that replicates the functionality of the existing Python-based assembler. The project should support multiple CPU architectures through JSON-based configuration files, with a focus on 8-bit processors (65C02, 6800) and extensibility for future architectures.
+
+## Core Requirements
+
+### 1. Architecture & Design
+- **Language**: Pure C (C99 or later)
+- **JSON Configuration**: CPU profiles defined in JSON files (same format as Python version)
+- **Modular Design**: Clear separation between parsing, assembly, and CPU-specific logic
+- **Memory Management**: Proper malloc/free usage with error handling
+- **Cross-Platform**: Compatible with Linux, macOS, and Windows
+
+### 2. CPU Profile System
+Replicate the JSON-based CPU profile system:
+
+#### JSON Structure (same as Python version):
+```json
+{
+  "cpu_info": {
+    "name": "65C02",
+    "description": "CMOS 6502 processor with additional instructions",
+    "data_width": 8,
+    "address_width": 16,
+    "endianness": "little"
+  },
+  "addressing_modes": {
+    "IMPLIED": 0,
+    "ACCUMULATOR": 1,
+    "IMMEDIATE": 2,
+    "ZEROPAGE": 3,
+    "ABSOLUTE": 6,
+    "RELATIVE": 12
+  },
+  "opcodes": {
+    "LDA": {
+      "IMMEDIATE": [169, 1, {"base": 2}, "NZ"],
+      "ABSOLUTE": [173, 2, {"base": 4}, "NZ"]
+    }
+  },
+  "addressing_mode_patterns": [
+    {
+      "pattern": "^(BRK|CLC|CLD|CLI|CLV|NOP|RTS|SEC|SED|SEI|TAX|TAY)$",
+      "mode": "IMPLIED",
+      "group_index": null,
+      "flags": ["IGNORECASE"]
+    }
+  ],
+  "branch_mnemonics": ["BCC", "BCS", "BEQ", "BMI", "BNE", "BPL", "BVC", "BVS", "BRA"],
+  "directives": {
+    "ORG": {"operand_count": 1, "operand_type": "expression"},
+    "BYTE": {"operand_count": "variable", "operand_type": "expression", "size_multiplier": 1}
+  },
+  "validation_rules": {
+    "accumulator_only": {"ASL": ["ACCUMULATOR"]},
+    "inherent_only": {"RTS": ["IMPLIED"]},
+    "optimization_hints": {
+      "immediate_range_check": {
+        "max_value": 255,
+        "message": "Immediate value {value} exceeds 8-bit range for {mnemonic}"
+      }
+    }
+  }
+}
+```
+
+### 3. Core Components
+
+#### 3.1 JSON Parser Integration
+- Use a C JSON library (cJSON, Jansson, or similar)
+- Load and validate JSON CPU profiles
+- Dynamic enum creation for addressing modes
+- Error handling for malformed JSON
+
+#### 3.2 Data Structures
+```c
+// CPU Profile structures
+typedef struct {
+    char* name;
+    char* description;
+    int data_width;
+    int address_width;
+    char* endianness;
+} CPUInfo;
+
+typedef enum {
+    ADDR_MODE_IMPLIED,
+    ADDR_MODE_ACCUMULATOR,
+    ADDR_MODE_IMMEDIATE,
+    // ... dynamically generated from JSON
+} AddressingMode;
+
+typedef struct {
+    char* mnemonic;
+    AddressingMode mode;
+    char* operand_str;
+    int operand_value;
+    int address;
+    uint8_t* machine_code;
+    size_t code_size;
+    int line_num;
+} Instruction;
+
+typedef struct {
+    CPUInfo* cpu_info;
+    AddressingMode* addressing_modes;
+    char** addressing_mode_names;
+    int num_addressing_modes;
+    // ... other profile data
+} CPUProfile;
+```
+
+#### 3.3 Parser Module
+- **File**: `parser.c` / `parser.h`
+- **Functionality**: 
+  - Tokenize assembly source
+  - Parse instructions and directives
+  - Handle labels and symbols
+  - Create instruction structures
+- **Key Functions**:
+  ```c
+  Parser* parser_create(const char* filename);
+  int parser_parse(Parser* parser, Program* program);
+  void parser_destroy(Parser* parser);
+  ```
+
+#### 3.4 Assembler Module
+- **File**: `assembler.c` / `assembler.h`
+- **Functionality**:
+  - Two-pass assembly process
+  - Symbol resolution
+  - Address assignment
+  - Machine code generation
+- **Key Functions**:
+  ```c
+  int assembler_assemble(Program* program, CPUProfile* profile, uint8_t** output, size_t* output_size);
+  int assembler_first_pass(Program* program, CPUProfile* profile);
+  int assembler_second_pass(Program* program, CPUProfile* profile);
+  ```
+
+#### 3.5 Expression Evaluator
+- **File**: `expr_eval.c` / `expr_eval.h`
+- **Functionality**:
+  - Parse and evaluate arithmetic expressions
+  - Handle symbols and labels
+  - Support operators: +, -, *, /, &, |, ^, ~
+  - Parentheses support
+- **Key Functions**:
+  ```c
+  int expr_evaluate(const char* expression, SymbolTable* symtab, int line_num, int* result);
+  ```
+
+#### 3.6 Symbol Table
+- **File**: `symbol_table.c` / `symbol_table.h`
+- **Functionality**:
+  - Store and retrieve symbols/labels
+  - Forward reference resolution
+  - Symbol validation
+- **Key Functions**:
+  ```c
+  SymbolTable* symtab_create(void);
+  int symtab_add(SymbolTable* symtab, const char* name, int value);
+  int symtab_lookup(SymbolTable* symtab, const char* name, int* value);
+  void symtab_destroy(SymbolTable* symtab);
+  ```
+
+#### 3.7 Diagnostics System
+- **File**: `diagnostics.c` / `diagnostics.h`
+- **Functionality**:
+  - Error and warning reporting
+  - Line number tracking
+  - Message formatting
+- **Key Functions**:
+  ```c
+  void diag_error(Diagnostics* diag, int line_num, const char* format, ...);
+  void diag_warning(Diagnostics* diag, int line_num, const char* format, ...);
+  int diag_has_errors(Diagnostics* diag);
+  ```
+
+### 4. Main Program
+
+#### 4.1 Command Line Interface
+```c
+int main(int argc, char* argv[]) {
+    // Parse command line arguments
+    // Load CPU profile
+    // Parse source file
+    // Perform assembly
+    // Generate output file
+    // Report errors/warnings
+}
+```
+
+#### 4.2 Command Line Options
+- `-h, --help`: Show help
+- `-c, --cpu <cpu>`: Target CPU (65c02, 6800)
+- `-o, --output <file>`: Output binary file
+- `-s, --start-address <addr>`: Starting address
+- `-l, --log-file <file>`: Log file for detailed output
+
+### 5. JSON CPU Profile Implementation
+
+#### 5.1 Dynamic Enum System
+```c
+typedef struct {
+    char* name;
+    int value;
+} AddressingModeDef;
+
+AddressingMode* create_addressing_mode_enum(const char* cpu_name, AddressingModeDef* defs, int count);
+AddressingMode get_addressing_mode_enum(CPUProfile* profile, const char* mode_name);
+const char* get_addressing_mode_name(CPUProfile* profile, AddressingMode mode);
+```
+
+#### 5.2 Addressing Mode Parsing
+```c
+typedef struct {
+    char* pattern;
+    char* mode_name;
+    int group_index;
+    char** flags;
+    int flag_count;
+} AddressingPattern;
+
+int parse_addressing_mode(CPUProfile* profile, const char* operand_str, 
+                        AddressingMode* mode, int* value);
+```
+
+### 6. Memory Management
+
+#### 6.1 String Handling
+- Use `strdup()` for string duplication
+- Proper cleanup with `free()`
+- Buffer overflow protection
+
+#### 6.2 Dynamic Arrays
+```c
+typedef struct {
+    void** data;
+    size_t size;
+    size_t capacity;
+    size_t element_size;
+} DynamicArray;
+
+DynamicArray* array_create(size_t element_size);
+int array_push(DynamicArray* array, void* element);
+void array_destroy(DynamicArray* array);
+```
+
+### 7. Error Handling
+
+#### 7.1 Return Codes
+```c
+#define ASSEMBLER_SUCCESS 0
+#define ASSEMBLER_ERROR_PARSE -1
+#define ASSEMBLER_ERROR_SYMBOL -2
+#define ASSEMBLER_ERROR_OPCODE -3
+#define ASSEMBLER_ERROR_MEMORY -4
+#define ASSEMBLER_ERROR_FILE -5
+```
+
+#### 7.2 Error Propagation
+- Consistent error handling throughout
+- Resource cleanup on errors
+- Clear error messages with line numbers
+
+### 8. Build System
+
+#### 8.1 Makefile
+```makefile
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c99 -O2
+LIBS = -lcjson
+
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
+
+SOURCES = $(wildcard $(SRCDIR)/*.c)
+OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+TARGET = $(BINDIR)/assembler
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS) | $(BINDIR)
+	$(CC) $(OBJECTS) -o $@ $(LIBS)
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJDIR) $(BINDIR)
+```
+
+#### 8.2 Directory Structure
+```
+multi-cpu-assembler-c/
+├── src/
+│   ├── main.c
+│   ├── parser.c
+│   ├── assembler.c
+│   ├── cpu_profile.c
+│   ├── expr_eval.c
+│   ├── symbol_table.c
+│   ├── diagnostics.c
+│   └── utils.c
+├── include/
+│   ├── parser.h
+│   ├── assembler.h
+│   ├── cpu_profile.h
+│   ├── expr_eval.h
+│   ├── symbol_table.h
+│   ├── diagnostics.h
+│   └── utils.h
+├── cpu_profiles/
+│   ├── 65c02.json
+│   └── 6800.json
+├── examples/
+│   ├── mcu65c02.s
+│   └── mcu6800.s
+├── tests/
+│   ├── test_parser.c
+│   ├── test_assembler.c
+│   └── test_cpu_profiles.c
+├── Makefile
+└── README.md
+```
+
+### 9. Testing Framework
+
+#### 9.1 Unit Tests
+- Simple assertion-based testing
+- Test each module independently
+- Mock JSON data for CPU profile tests
+
+#### 9.2 Integration Tests
+- End-to-end assembly testing
+- Real assembly file processing
+- Output verification
+
+#### 9.3 Test Structure
+```c
+// test_framework.h
+#define ASSERT(condition) \
+    do { \
+        if (!(condition)) { \
+            printf("FAIL: %s:%d - %s\n", __FILE__, __LINE__, #condition); \
+            return 0; \
+        } \
+    } while(0)
+
+#define ASSERT_EQ(expected, actual) \
+    do { \
+        if ((expected) != (actual)) { \
+            printf("FAIL: %s:%d - Expected %d, got %d\n", __FILE__, __LINE__, (expected), (actual)); \
+            return 0; \
+        } \
+    } while(0)
+```
+
+### 10. Documentation
+
+#### 10.1 Code Documentation
+- Doxygen-style comments for public APIs
+- Clear function headers with parameter descriptions
+- Inline comments for complex logic
+
+#### 10.2 README.md
+- Build instructions
+- Usage examples
+- CPU profile format documentation
+- Testing instructions
+
+### 11. Performance Considerations
+
+#### 11.1 Efficient Data Structures
+- Hash tables for symbol lookup
+- Pre-compiled regex patterns
+- Minimal memory allocations
+
+#### 11.2 Optimization Opportunities
+- String interning for identifiers
+- Lookup tables for common operations
+- Buffer reuse for output generation
+
+### 12. Portability
+
+#### 12.1 Platform Compatibility
+- Use standard C library functions
+- Avoid platform-specific code
+- Conditional compilation for differences
+
+#### 12.2 Build Dependencies
+- Minimal external dependencies
+- Optional JSON library selection
+- Static linking preference
+
+## Implementation Phases
+
+### Phase 1: Foundation (Week 1)
+1. Set up project structure and build system
+2. Implement basic data structures and memory management
+3. Create JSON parsing integration
+4. Implement diagnostics system
+
+### Phase 2: Core Functionality (Week 2)
+1. Implement CPU profile loading and validation
+2. Create parser module for source files
+3. Implement symbol table management
+4. Add expression evaluator
+
+### Phase 3: Assembly Engine (Week 3)
+1. Implement two-pass assembler
+2. Add machine code generation
+3. Create output file writing
+4. Add command line interface
+
+### Phase 4: Testing & Polish (Week 4)
+1. Create comprehensive test suite
+2. Add error handling edge cases
+3. Optimize performance
+4. Write documentation
+
+## Success Criteria
+
+1. **Functional Parity**: All features of Python version replicated
+2. **Performance**: Comparable or better assembly speed
+3. **Memory Safety**: No memory leaks or buffer overflows
+4. **Extensibility**: Easy to add new CPU profiles
+5. **Code Quality**: Clean, well-documented, maintainable code
+6. **Testing**: Comprehensive test coverage
+7. **Portability**: Works on major platforms
+
+## Deliverables
+
+1. Complete C source code with all modules
+2. Working build system (Makefile)
+3. JSON CPU profiles for 65C02 and 6800
+4. Example assembly files and test cases
+5. Comprehensive documentation
+6. Performance benchmarks vs Python version
+7. Memory usage analysis
+
+This prompt provides a complete specification for recreating the multi-CPU assembler in C while maintaining the same architecture, features, and extensibility as the Python version.
