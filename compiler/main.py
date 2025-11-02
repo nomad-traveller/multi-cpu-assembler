@@ -1,10 +1,11 @@
-# main.py (corrected version)
+# main.py (JSON-based template version)
 import argparse
 import re
+import os
+import importlib
+import json
 
-from cpu_profiles.c6502.c6502_profile import C6502Profile
-from cpu_profiles.c6800.c6800_profile import C6800Profile
-from cpu_profiles.c8086.c8086_profile import C8086Profile
+# Import JSON profiles dynamically - no custom classes needed
 from core.emitter import Emitter # Keep for type hinting if needed
 from core.expression_evaluator import evaluate_expression
 from core.diagnostics import Diagnostics
@@ -15,17 +16,68 @@ from core.instruction import Instruction
 from core.assembler import Assembler
 import logging
 
-# --- Profile Factory ---
-# This dictionary maps a CPU name to its corresponding profile class.
-# It makes the assembler easily extensible with new CPU profiles.
-SUPPORTED_CPUS = {
-    "65c02": C6502Profile,
-    "6800": C6800Profile,
-    "8086": C8086Profile,
-    # To add support for another CPU, you would:
-    # 1. Import its profile class (e.g., from cpu_profiles import C8080Profile)
-    # 2. Add an entry here (e.g., "8080": C8080Profile)
-}
+# --- CPU Profile Template System ---
+# This system allows dynamic loading of CPU profiles from JSON files
+# and provides a template-based architecture for different CPU types
+
+class CPUProfileFactory:
+    """Factory for creating CPU profiles from JSON files and templates."""
+    
+    def __init__(self):
+        self.profiles_dir = os.path.join(os.path.dirname(__file__), "cpu_profiles")
+        self._profile_cache = {}
+        self._load_available_profiles()
+    
+    def _load_available_profiles(self):
+        """Scan for available CPU profiles."""
+        if not os.path.exists(self.profiles_dir):
+            return
+        
+        for file in os.listdir(self.profiles_dir):
+            if file.endswith('.json'):
+                cpu_name = file[:-5]  # Remove .json extension
+                self._profile_cache[cpu_name] = {
+                    'json_file': os.path.join(self.profiles_dir, file),
+                    'class': None
+                }
+    
+    def get_available_cpus(self) -> list[str]:
+        """Get list of available CPU profiles."""
+        return list(self._profile_cache.keys())
+    
+    def create_profile(self, cpu_name: str, diagnostics: Diagnostics):
+        """Create a CPU profile instance."""
+        cpu_name = cpu_name.lower()
+        
+        if cpu_name not in self._profile_cache:
+            raise ValueError(f"CPU profile '{cpu_name}' not found. Available: {self.get_available_cpus()}")
+        
+        # No special handling needed - all profiles use generic JSONCPUProfile
+        
+        # Generic JSON profile loading
+        profile_info = self._profile_cache[cpu_name]
+        json_file = profile_info['json_file']
+        
+        # Try to load a custom profile class if it exists
+        class_file = os.path.join(self.profiles_dir, f"json_{cpu_name}_profile.py")
+        if os.path.exists(class_file):
+            module_name = f"cpu_profiles.json_{cpu_name}_profile"
+            class_name = f"JSON{cpu_name.upper().replace('-', '')}Profile"
+            
+            try:
+                module = importlib.import_module(module_name)
+                profile_class = getattr(module, class_name)
+                return profile_class(diagnostics)
+            except (ImportError, AttributeError):
+                pass
+        
+        # Fall back to generic JSON profile
+        from cpu_profile_base import JSONCPUProfile
+        return JSONCPUProfile(diagnostics, json_file)
+
+# Initialize the profile factory
+profile_factory = CPUProfileFactory()
+SUPPORTED_CPUS = {cpu: cpu for cpu in profile_factory.get_available_cpus()}
 
 def parse_args() -> argparse.Namespace:
     """Parses and returns command-line arguments."""
@@ -58,12 +110,11 @@ def main() -> bool:
     diagnostics = Diagnostics(logger)
 
     # --- Composition Root: Instantiate and wire up all components ---
-    profile_class = SUPPORTED_CPUS.get(args.cpu)
-    if not profile_class:
-        diagnostics.error(None, f"CPU profile '{args.cpu}' is not supported.")
+    try:
+        profile = profile_factory.create_profile(args.cpu, diagnostics)
+    except ValueError as e:
+        diagnostics.error(None, str(e))
         return False
-
-    profile = profile_class(diagnostics)
     symbol_table = SymbolTable(diagnostics)
     parser = Parser(profile, diagnostics)
     program = Program(symbol_table)

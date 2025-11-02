@@ -1,7 +1,7 @@
 import re
 from collections import namedtuple
 
-from cpu_profile_base import CPUProfile
+from cpu_profile_base import CPUProfile, JSONCPUProfile
 from .diagnostics import Diagnostics
 from .instruction import Instruction
 from .program import Program
@@ -83,7 +83,7 @@ class _LineParser:
         return ParsedLine(existing_label, mnemonic, operand_str)
 
 class Parser:
-    def __init__(self, cpu_profile: 'CPUProfile', diagnostics: 'Diagnostics'):
+    def __init__(self, cpu_profile: 'JSONCPUProfile', diagnostics: 'Diagnostics'):
         """
         Initializes the Parser with a CPU profile and a diagnostics object.
 
