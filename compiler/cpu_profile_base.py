@@ -67,61 +67,93 @@ class JSONCPUProfile:
         return None
     
     def parse_addressing_mode(self, operand_str: str) -> tuple[Any, Any]:
-        """Parse addressing mode using JSON patterns."""
+        """Parse addressing mode using JSON patterns (optimized for 8-bit CPUs)."""
         operand_str = operand_str.strip().upper()
         if not operand_str:
             return (self.get_addressing_mode_enum("INHERENT"), None)
         
+        # Try each pattern until we find a match
         for pattern_info in self.addressing_mode_patterns:
-            pattern = pattern_info["pattern"]
-            mode_name = pattern_info["mode"]
-            group_idx = pattern_info.get("group_index")
-            flags = pattern_info.get("flags", [])
-            
-            # Compile regex with flags
-            regex_flags = 0
-            if "IGNORECASE" in flags:
-                regex_flags |= re.IGNORECASE
-            
-            compiled_pattern = re.compile(pattern, regex_flags)
-            match = compiled_pattern.match(operand_str)
+            match = self._match_pattern(operand_str, pattern_info)
             if match:
+                mode_name = pattern_info["mode"]
                 mode = self.get_addressing_mode_enum(mode_name)
-                value = None
-                
-                if group_idx is not None:
-                    val_str = match.group(group_idx)
-                    if val_str.startswith('$'):
-                        value = int(val_str[1:], 16)
-                    elif val_str.isdigit():
-                        value = int(val_str)
-                    else:
-                        value = val_str
-                elif mode_name in ["ACCUMULATOR_A", "ACCUMULATOR_B"]:
-                    # For accumulator modes, value is None
-                    value = None
-                else:
-                    # For patterns without group_idx, process the full operand_str
-                    val_str = operand_str
-                    # Remove syntax characters
-                    val_str = re.sub(r'[#(),X]', '', val_str)
-                    # Handle hex values
-                    if val_str.startswith('$'):
-                        val_str = val_str[1:]
-                        try:
-                            value = int(val_str, 16)
-                        except ValueError:
-                            value = val_str
-                    else:
-                        try:
-                            value = int(val_str)
-                        except ValueError:
-                            # It's a label
-                            value = val_str.strip()
-                
+                value = self._extract_value(match, pattern_info, operand_str)
                 return (mode, value)
         
         raise ValueError(f"Invalid operand: {operand_str}")
+    
+    def _match_pattern(self, operand_str: str, pattern_info: dict) -> re.Match | None:
+        """Match operand against a single pattern."""
+        pattern = pattern_info["pattern"]
+        flags = pattern_info.get("flags", [])
+        
+        # Compile regex with appropriate flags
+        regex_flags = 0
+        if "IGNORECASE" in flags:
+            regex_flags |= re.IGNORECASE
+        
+        compiled_pattern = re.compile(pattern, regex_flags)
+        return compiled_pattern.match(operand_str)
+    
+    def _extract_value(self, match: re.Match, pattern_info: dict, original_operand: str) -> Any:
+        """Extract and convert value from regex match (8-bit CPU optimized)."""
+        mode_name = pattern_info["mode"]
+        group_idx = pattern_info.get("group_index")
+        
+        # Handle accumulator modes (no value needed)
+        if mode_name in ["ACCUMULATOR", "ACCUMULATOR_A", "ACCUMULATOR_B"]:
+            return None
+        
+        # Extract value using group index if specified
+        if group_idx is not None:
+            val_str = match.group(group_idx)
+            return self._convert_numeric_value(val_str)
+        
+        # For patterns without group_idx, handle based on mode
+        if mode_name == "IMPLIED":
+            # For implied instructions, return the full operand (e.g., "NOP")
+            return original_operand
+        elif mode_name in ["IMMEDIATE", "DIRECT", "EXTENDED", "INDEXED"]:
+            return self._extract_from_operand(original_operand, mode_name)
+        
+        # Default: no value
+        return None
+    
+    def _convert_numeric_value(self, val_str: str) -> int | str | None:
+        """Convert string value to numeric if possible (8-bit CPU optimized)."""
+        if not val_str:
+            return None
+            
+        # Handle hexadecimal values
+        if val_str.startswith('$'):
+            try:
+                return int(val_str[1:], 16)
+            except ValueError:
+                return val_str
+        
+        # Handle decimal values
+        if val_str.isdigit():
+            return int(val_str)
+        
+        # Return as string (label/symbol)
+        return val_str
+    
+    def _extract_from_operand(self, operand_str: str, mode_name: str) -> int | str | None:
+        """Extract value from operand string based on addressing mode."""
+        # Remove addressing mode syntax characters
+        clean_str = operand_str
+        clean_str = re.sub(r'[#()]', '', clean_str)  # Remove #, (, )
+        
+        # For indexed addressing, extract base address
+        if mode_name == "INDEXED":
+            parts = clean_str.split(',')
+            clean_str = parts[0] if parts else clean_str
+        
+        # Remove register references
+        clean_str = re.sub(r'[XYAB]$', '', clean_str.strip())
+        
+        return self._convert_numeric_value(clean_str)
     
     def parse_instruction(self, instruction, parser: 'Parser') -> None:
         """Parse CPU instruction using JSON configuration."""
