@@ -1,22 +1,23 @@
 # Testing Guide
 
-This document provides comprehensive testing documentation for the Multi-CPU Assembler, including JSON CPU profile validation, unit testing, and interactive testing tools.
+This document provides comprehensive testing documentation for the Multi-CPU Assembler, including JSON5/YAML CPU profile validation, unit testing, and interactive testing tools.
 
 ## Overview
 
-The assembler includes a complete testing suite designed to validate both the core functionality and the JSON-based CPU profiles. All tests can be run independently of the main assembler.
+The assembler includes a complete testing suite designed to validate both the core functionality and the JSON5/YAML-based CPU profiles. All tests can be run independently of the main assembler.
 
 ## Test Suite Structure
 
 ```
 tests/
-├── test_json_cpu_profiles.py     # JSON profile functionality (10 tests)
+├── test_json_cpu_profiles.py     # Profile functionality (10 tests)
 ├── test_end_to_end_65c02.py      # 65C02 assembly workflow (5 tests)
 └── test_end_to_end_6800.py       # 6800 assembly workflow (5 tests)
 
-JSON Testing Tools:
-├── validate_json_profiles.py     # Automated JSON validator
+Profile Testing Tools:
+├── validate_json_profiles.py     # Automated profile validator (JSON5/YAML)
 ├── test_json_interactive.py      # Interactive profile tester
+├── convert_to_yaml.py           # JSON5 to YAML conversion tool
 └── JSON_TESTING_SUMMARY.md       # Complete testing documentation
 ```
 
@@ -33,44 +34,49 @@ python -m unittest discover -s tests -p "test_*.py"
 # Expected: Ran 20 tests, OK
 ```
 
-### Validate JSON CPU Profiles
+### Validate CPU Profiles (JSON5/YAML)
 ```bash
-# Validate all JSON profiles
+# Validate all profiles (both JSON5 and YAML)
 python validate_json_profiles.py --all
 
 # Validate specific profile
 python validate_json_profiles.py compiler/cpu_profiles/65c02.json
+python validate_json_profiles.py compiler/cpu_profiles/65c02.yaml
 
 # Expected output:
 # ✅ 65c02.json: VALID
+# ✅ 65c02.yaml: VALID
 # ✅ 6800.json: VALID
-# ✅ All JSON files are valid!
+# ✅ 6800.yaml: VALID
+# ✅ All profile files are valid!
 ```
 
 ### Interactive Testing
 ```bash
-# Interactive menu for testing profiles
+# Interactive menu for testing profiles (supports both formats)
 python test_json_interactive.py
 
 # Test specific profile directly
 python test_json_interactive.py compiler/cpu_profiles/65c02.json
+python test_json_interactive.py compiler/cpu_profiles/65c02.yaml
 ```
 
-## JSON CPU Profile Testing
+## CPU Profile Testing (JSON5/YAML)
 
 ### Automated Validation (`validate_json_profiles.py`)
 
-This tool performs comprehensive validation of JSON CPU profiles:
+This tool performs comprehensive validation of CPU profiles in both JSON5 and YAML formats:
 
 **Features:**
-- JSON syntax validation
+- JSON5/YAML syntax validation
 - Required sections checking
 - Data type validation
 - Cross-reference validation
 - Detailed analysis reporting
+- Automatic format detection
 
 **Validation Criteria:**
-- ✅ JSON syntax is valid
+- ✅ JSON5/YAML syntax is valid
 - ✅ Required sections exist (cpu_info, addressing_modes, opcodes, etc.)
 - ✅ CPU information is complete
 - ✅ Addressing modes are properly defined
@@ -81,9 +87,19 @@ This tool performs comprehensive validation of JSON CPU profiles:
 
 **Example Output:**
 ```
-🔍 JSON CPU Profile Validation
+🔍 CPU Profile Validation (JSON/YAML)
 ============================================================
 ✅ 65c02.json: VALID
+   📋 CPU: 65C02 (8-bit, 16-bit, little endian)
+   🔧 Addressing Modes: 14
+   📝 Mnemonics: 64
+   🔢 Total Opcodes: 178
+   🌿 Branch Instructions: 9
+   🎯 Addressing Patterns: 15
+   📜 Has Directives: Yes
+   ⚖️  Has Validation Rules: Yes
+
+✅ 65c02.yaml: VALID
    📋 CPU: 65C02 (8-bit, 16-bit, little endian)
    🔧 Addressing Modes: 14
    📝 Mnemonics: 64
@@ -110,11 +126,13 @@ This tool provides interactive testing of CPU profile functionality:
 ```
 🎯 Available CPU Profiles:
    1. 65c02.json
-   2. 6800.json
-   3. Test all profiles
+   2. 65c02.yaml
+   3. 6800.json
+   4. 6800.yaml
+   5. Test all profiles
    0. Exit
 
-Select profile to test (0-3):
+Select profile to test (0-5):
 ```
 
 **Testing Capabilities:**
@@ -158,9 +176,9 @@ Select profile to test (0-3):
 
 ### Test Categories
 
-#### 1. JSON CPU Profile Tests (`test_json_cpu_profiles.py`)
+#### 1. CPU Profile Tests (`test_json_cpu_profiles.py`)
 **10 tests covering:**
-- JSONCPUProfile class functionality
+- JSONCPUProfile class functionality (JSON5/YAML)
 - CPUProfileFactory testing
 - Error handling and validation
 - Addressing mode parsing
@@ -311,13 +329,17 @@ OK
    pwd  # Should be /home/user/myproject
    ```
 
-3. **JSON Validation Failures:**
+3. **Profile Validation Failures:**
    ```bash
-   # Check JSON syntax
-   python -m json.tool compiler/cpu_profiles/65c02.json
+   # Check JSON5 syntax
+   python -c "import json5; print(json5.load(open('compiler/cpu_profiles/65c02.json')))"
+   
+   # Check YAML syntax
+   python -c "import yaml; print(yaml.safe_load(open('compiler/cpu_profiles/65c02.yaml')))"
    
    # Run detailed validation
    python validate_json_profiles.py compiler/cpu_profiles/65c02.json
+   python validate_json_profiles.py compiler/cpu_profiles/65c02.yaml
    ```
 
 ### Debug Mode
@@ -374,7 +396,7 @@ The test suite is designed for CI/CD integration:
 . compiler/.venv/bin/activate && python -m unittest discover -s tests -p "test_*.py" && python validate_json_profiles.py --all
 ```
 
-This command runs all unit tests and validates JSON profiles, providing comprehensive validation.
+This command runs all unit tests and validates CPU profiles (both JSON5 and YAML), providing comprehensive validation.
 
 ## Performance Testing
 
@@ -390,6 +412,6 @@ python -m cProfile validate_json_profiles.py --all
 
 ## Conclusion
 
-The testing suite provides comprehensive coverage of the assembler's functionality, with special emphasis on the JSON-based CPU profile system. All tools are designed for independent operation and can be used without running the main assembler.
+The testing suite provides comprehensive coverage of the assembler's functionality, with special emphasis on the JSON5/YAML-based CPU profile system. All tools are designed for independent operation and can be used without running the main assembler.
 
 **Status**: ✅ All tests passing, JSON validation complete

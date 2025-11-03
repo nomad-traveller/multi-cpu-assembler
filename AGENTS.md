@@ -3,18 +3,21 @@
 ## Build/Lint/Test Commands
 
 ### Testing
-- Run all tests: `source compiler/.venv/bin/activate && python -m unittest discover`
-- Run specific test file: `source compiler/.venv/bin/activate && python test_assembler.py`
-- Run single test method: `source compiler/.venv/bin/activate && python -m unittest test_assembler.TestAssembler.test_empty_program`
+- Run all tests: `source compiler/.venv/bin/activate && python -m unittest discover tests/`
+- Run specific test file: `source compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles`
+- Run single test method: `source compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles.TestJSONCPUProfiles.test_load_65c02_profile`
+- Validate CPU profiles: `source compiler/.venv/bin/activate && python validate_json_profiles.py --all`
+- Interactive testing: `source compiler/.venv/bin/activate && python test_json_interactive.py`
 
 ### Building/Running
-- Main assembler: `source compiler/.venv/bin/activate && python main.py source_file.s -o output.bin --cpu 65c02`
+- Main assembler: `source compiler/.venv/bin/activate && python compiler/main.py source_file.s -o output.bin --cpu 65c02`
 - Available CPUs: 65c02, 6800
+- Profile formats: JSON5 (.json) and YAML (.yaml/.yml) - auto-detected
 
 ### Dependencies
 - Create virtual environment: `python3 -m venv compiler/.venv`
 - Activate virtual environment: `source compiler/.venv/bin/activate` (or `. compiler/.venv/bin/activate`)
-- Install required packages: `pip install sly`
+- Install required packages: `pip install sly PyYAML`
 - The project uses a virtual environment in `compiler/.venv/`
 
 ## Code Style Guidelines
