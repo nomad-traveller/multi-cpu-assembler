@@ -581,7 +581,7 @@ class ConfigCPUProfile:
     
     def handle_directive_pass2(self, instruction, symbol_table) -> bool:
         """Handle directive processing during second pass. Returns True on success."""
-        from expression_evaluator import evaluate_expression
+        from core.expression_evaluator import evaluate_expression
         
         directive = instruction.directive
         directive_info = self.directives.get(directive, {})
@@ -629,7 +629,7 @@ class ConfigCPUProfile:
 
     def encode_instruction(self, instruction, symbol_table) -> bool:
         """Generic instruction encoding using YAML configuration."""
-        from expression_evaluator import evaluate_expression
+        from core.expression_evaluator import evaluate_expression
         
         mnemonic = instruction.mnemonic
         mode = instruction.mode

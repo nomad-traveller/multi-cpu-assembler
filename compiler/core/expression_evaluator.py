@@ -2,7 +2,7 @@
 An AST-based expression evaluator. It recursively walks the AST generated
 by the expression parser and computes the final value.
 """
-from expression_parser import BinOp, UnaryOp, Number, Symbol
+from core.expression_parser import BinOp, UnaryOp, Number, Symbol
 
 def evaluate_expression(node, symbol_table, line_num, current_address: int = 0):
     """

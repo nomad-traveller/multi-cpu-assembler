@@ -1,5 +1,5 @@
 import os
-from diagnostics import Diagnostics
+from core.diagnostics import Diagnostics
 
 class Emitter:
     """

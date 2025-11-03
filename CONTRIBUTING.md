@@ -25,10 +25,10 @@ Thank you for your interest in contributing to the Multi-CPU Assembler! This doc
    ```
 
 3. **Verify Setup**
-   ```bash
-   cd compiler
-   python -m unittest tests.test_parser
-   ```
+    ```bash
+    . compiler/.venv/bin/activate
+    python -m unittest discover tests/
+    ```
 
 ### Development Workflow
 
@@ -43,10 +43,10 @@ Thank you for your interest in contributing to the Multi-CPU Assembler! This doc
    - Update documentation as needed
 
 3. **Run Tests**
-   ```bash
-   cd compiler
-   python -m unittest discover tests/
-   ```
+    ```bash
+    . compiler/.venv/bin/activate
+    python -m unittest discover tests/
+    ```
 
 4. **Commit Changes**
    ```bash
@@ -128,38 +128,113 @@ class ExampleClass:
 
 ## Adding New CPU Support
 
-The assembler is designed for easy CPU extension. Follow these steps:
+The assembler is designed for easy CPU extension through YAML profiles. Follow these steps:
 
-### 1. Create CPU Profile Structure
+### 1. Create YAML CPU Profile
 
-```bash
-mkdir -p compiler/cpu_profiles/newcpu
-touch compiler/cpu_profiles/newcpu/__init__.py
-touch compiler/cpu_profiles/newcpu/newcpu_profile.py
-touch compiler/cpu_profiles/newcpu/opcodes_newcpu.py
+Create `compiler/cpu_profiles/newcpu.yaml`:
+
+```yaml
+cpu_info:
+  name: 'NEWCPU'
+  description: New CPU Architecture
+  data_width: 8
+  address_width: 16
+  endianness: little
+  fill_byte: "0x00"
+
+addressing_modes:
+  IMPLIED: 0
+  IMMEDIATE: 1
+  ABSOLUTE: 2
+  RELATIVE: 3
+
+opcodes:
+  NOP:
+    IMPLIED: [0x00, 0, 2, ""]
+  LDA:
+    IMMEDIATE: [0xA9, 1, 2, "NZ"]
+    ABSOLUTE: [0xAD, 2, 4, "NZ"]
+
+directives:
+  EQU:
+    type: "symbol_define"
+  .ORG:
+    type: "origin_set"
+  .BYTE:
+    type: "data_define"
+    size: 1
+
+validation_rules:
+  - type: "error_if_mode_is_not"
+    mnemonics: ["NOP"]
+    modes: ["IMPLIED"]
+    message: "Instruction {mnemonic} must use inherent addressing (no operands)."
 ```
 
-### 2. Define Opcodes (opcodes_newcpu.py)
+### 2. Test the New Profile
+
+```bash
+# Test the profile loads correctly
+. compiler/.venv/bin/activate && python -c "
+from main import CPUProfileFactory
+from core.diagnostics import Diagnostics
+factory = CPUProfileFactory()
+diagnostics = Diagnostics()
+profile = factory.create_profile('newcpu', diagnostics)
+print(f'CPU: {profile.cpu_info}')
+print(f'Addressing modes: {len(profile.addressing_modes)}')
+print(f'Opcodes: {len(profile.opcodes)}')
+"
+
+# Test with sample assembly
+cat > test_newcpu.s << 'EOF'
+.ORG $8000
+START:  LDA #$01
+        NOP
+        JMP START
+EOF
+
+. compiler/.venv/bin/activate && python compiler/main.py test_newcpu.s -o test_newcpu.bin --cpu newcpu
+```
+
+### 3. Add Tests
+
+Create `tests/test_end_to_end_newcpu.py`:
 
 ```python
-from enum import Enum, auto
+import unittest
+import tempfile
+import os
+from main import CPUProfileFactory, main
+from core.diagnostics import Diagnostics
+from unittest.mock import patch
+from io import StringIO
 
-class NewCPUAddressingMode(Enum):
-    IMMEDIATE = auto()
-    ABSOLUTE = auto()
-    RELATIVE = auto()
-    # Add more modes as needed
+class TestEndToEndNewCPU(unittest.TestCase):
+    def setUp(self):
+        self.diagnostics = Diagnostics()
+        self.factory = CPUProfileFactory()
 
-OPCODES = {
-    "LDA": {
-        NewCPUAddressingMode.IMMEDIATE: [0xA9, 1, {}, ""],
-        NewCPUAddressingMode.ABSOLUTE: [0xAD, 2, {}, ""],
-    },
-    "JMP": {
-        NewCPUAddressingMode.ABSOLUTE: [0x4C, 2, {}, ""],
-    },
-    # Add all opcodes
-}
+    def test_newcpu_basic_assembly(self):
+        """Test assembling a simple NewCPU program"""
+        test_code = """
+        .ORG $8000
+        START:  LDA #$01
+                NOP
+                JMP START
+        """
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.s', delete=False) as f:
+            f.write(test_code)
+            temp_file = f.name
+
+        try:
+            with patch('sys.stdout', new_callable=StringIO):
+                success = main(['main.py', temp_file, '--cpu', 'newcpu'])
+            self.assertTrue(success)
+        finally:
+            os.unlink(temp_file)
 ```
 
 ### 3. Implement CPU Profile (newcpu_profile.py)
@@ -282,14 +357,20 @@ class TestNewCPU(unittest.TestCase):
 ### Running Tests
 
 ```bash
+# Activate virtual environment first
+. compiler/.venv/bin/activate
+
 # Run all tests
 python -m unittest discover tests/
 
 # Run specific test file
-python -m unittest tests.test_parser
+python -m unittest tests.test_assembler
 
 # Run specific test method
-python -m unittest tests.test_parser.TestParser.test_parse_line
+python -m unittest tests.test_assembler.TestAssembler.test_first_pass_symbol_resolution
+
+# Run with verbose output
+python -m unittest discover tests/ -v
 ```
 
 ## Documentation
@@ -304,7 +385,8 @@ python -m unittest tests.test_parser.TestParser.test_parse_line
 
 - Update README.md for new features
 - Add examples in `examples/` directory
-- Update `assembler.md` for architectural changes
+- Update TESTING.md for new test procedures
+- Update YAML_MIGRATION.md if profile format changes
 
 ## Commit Guidelines
 
@@ -372,9 +454,9 @@ This project follows a code of conduct to ensure a welcoming environment for all
 
 ## Getting Help
 
-- **Documentation**: Check `assembler.md` for architecture details
+- **Documentation**: Check README.md and TESTING.md for usage details
 - **Issues**: Search existing issues before creating new ones
 - **Discussions**: Use GitHub Discussions for questions
-- **Discord/Slack**: Join our community chat (if available)
+- **AGENTS.md**: Check for development guidelines and tool usage
 
 Thank you for contributing to the Multi-CPU Assembler! 🎉

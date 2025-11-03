@@ -4,7 +4,7 @@ A modular, extensible assembler supporting multiple CPU architectures through YA
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-20%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-24%20passing-brightgreen.svg)](tests/)
 
 ## Features
 
@@ -187,10 +187,13 @@ See `TESTING.md` for profile validation tools and detailed instructions.
 
 ```bash
 # Run all tests
-. compiler/.venv/bin/activate && python -m unittest discover -s tests -p "test_*.py"
+. compiler/.venv/bin/activate && python -m unittest discover tests/
 
-# Validate CPU profiles (YAML)
-source compiler/.venv/bin/activate && python -m unittest tests.test_yaml_cpu_profiles
+# Run specific test file
+. compiler/.venv/bin/activate && python -m unittest tests.test_yaml_cpu_profiles
+
+# Run tests with verbose output
+. compiler/.venv/bin/activate && python -m unittest discover tests/ -v
 ```
 
 See `TESTING.md` for comprehensive testing documentation.
@@ -263,10 +266,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 This project includes comprehensive testing tools:
 
-- **Unit Tests**: 20 tests covering YAML profiles, assembly workflow, and CLI
+- **Unit Tests**: 24 tests covering YAML profiles, assembly workflow, and CLI
 - **Profile Validation**: Standalone tools for validating CPU profiles
 - **Interactive Testing**: Real-time testing of addressing modes and opcodes
 - **End-to-End Testing**: Complete assembly workflow validation
+- **Test Coverage**: 100% test pass rate with comprehensive error handling validation
 
 
 See `TESTING.md` for detailed testing documentation and usage examples.

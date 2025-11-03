@@ -10,15 +10,10 @@ The assembler includes a complete testing suite designed to validate both the co
 
 ```
 tests/
-├── test_json_cpu_profiles.py     # Profile functionality (10 tests)
+├── test_assembler.py             # Core assembler functionality (4 tests)
+├── test_yaml_cpu_profiles.py     # YAML profile functionality (10 tests)
 ├── test_end_to_end_65c02.py      # 65C02 assembly workflow (5 tests)
 └── test_end_to_end_6800.py       # 6800 assembly workflow (5 tests)
-
-Profile Testing Tools:
-├── validate_json_profiles.py     # Automated profile validator (JSON5/YAML)
-├── test_json_interactive.py      # Interactive profile tester
-├── convert_to_yaml.py           # JSON5 to YAML conversion tool
-└── JSON_TESTING_SUMMARY.md       # Complete testing documentation
 ```
 
 ## Quick Testing Commands
@@ -31,7 +26,7 @@ Profile Testing Tools:
 # Run complete test suite
 python -m unittest discover -s tests -p "test_*.py"
 
-# Expected: Ran 20 tests, OK
+# Expected: Ran 24 tests, OK
 ```
 
 ### Validate CPU Profiles (JSON5/YAML)
@@ -176,9 +171,16 @@ Select profile to test (0-5):
 
 ### Test Categories
 
-#### 1. CPU Profile Tests (`test_json_cpu_profiles.py`)
+#### 1. Core Assembler Tests (`test_assembler.py`)
+**4 tests covering:**
+- Two-pass assembly process
+- Symbol resolution and management
+- Machine code generation
+- Error handling for duplicate labels
+
+#### 2. CPU Profile Tests (`test_yaml_cpu_profiles.py`)
 **10 tests covering:**
-- ConfigCPUProfile class functionality (JSON5/YAML)
+- ConfigCPUProfile class functionality (YAML)
 - CPUProfileFactory testing
 - Error handling and validation
 - Addressing mode parsing
@@ -222,13 +224,13 @@ def test_factory_invalid_cpu(self)
 
 ```bash
 # Run specific test file
-. compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles
+. compiler/.venv/bin/activate && python -m unittest tests.test_yaml_cpu_profiles
 
 # Run specific test method
-. compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles.TestConfigCPUProfile.test_load_65c02_profile
+. compiler/.venv/bin/activate && python -m unittest tests.test_yaml_cpu_profiles.TestYAMLConfigCPUProfile.test_load_valid_profile
 
 # Run with verbose output
-. compiler/.venv/bin/activate && python -m unittest discover -s tests -p "test_*.py" -v
+. compiler/.venv/bin/activate && python -m unittest discover tests/ -v
 ```
 
 ## Test Data and Examples
@@ -270,11 +272,11 @@ LOOP:   JMP START       ; Jump to start
 ## Expected Test Results
 
 ### Current Test Suite Status
-- **Total Tests**: 20
-- **Pass Rate**: 100% (20/20)
-- **Coverage**: JSON profiles, assembly workflow, CLI integration
+- **Total Tests**: 24
+- **Pass Rate**: 100% (24/24)
+- **Coverage**: Core assembler, YAML profiles, assembly workflow, CLI integration
 
-### JSON Profile Validation Results
+### YAML Profile Validation Results
 - **65C02 Profile**: ✅ VALID (178 opcodes, 14 addressing modes, 64 mnemonics)
 - **6800 Profile**: ✅ VALID (61 opcodes, 8 addressing modes, 27 mnemonics)
 
@@ -282,9 +284,15 @@ LOOP:   JMP START       ; Jump to start
 
 **Successful Test Run:**
 ```
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.007s
+
+OK
+
 ..........
 ----------------------------------------------------------------------
-Ran 10 tests in 0.012s
+Ran 10 tests in 0.055s
 
 OK
 
@@ -301,9 +309,9 @@ Ran 5 tests in 0.007s
 OK
 ```
 
-**JSON Validation Output:**
+**YAML Profile Validation Output:**
 ```
-✅ 65c02.json: VALID
+✅ 65c02.yaml: VALID
    📋 CPU: 65C02 (8-bit, 16-bit, little endian)
    🔧 Addressing Modes: 14
    📝 Mnemonics: 64
@@ -500,6 +508,6 @@ validation_rules:
 
 ## Conclusion
 
-The testing suite provides comprehensive coverage of the assembler's functionality, with special emphasis on the JSON5/YAML-based CPU profile system and the new generic validation engine. All tools are designed for independent operation and can be used without running the main assembler.
+The testing suite provides comprehensive coverage of the assembler's functionality, with special emphasis on YAML-based CPU profile system and generic validation engine. All tools are designed for independent operation and can be used without running the main assembler.
 
-**Status**: ✅ All tests passing, JSON validation complete, generic validation engine operational
+**Status**: ✅ All tests passing (24/24), YAML validation complete, generic validation engine operational

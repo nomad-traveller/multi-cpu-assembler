@@ -1,8 +1,8 @@
 from cpu_profile_base import ConfigCPUProfile
-from symbol_table import SymbolTable
-from diagnostics import Diagnostics
-from program import Program
-from expression_evaluator import evaluate_expression
+from core.symbol_table import SymbolTable
+from core.diagnostics import Diagnostics
+from core.program import Program
+from core.expression_evaluator import evaluate_expression
 
 class Assembler:
     def __init__(self, cpu_profile: ConfigCPUProfile, symbol_table: 'SymbolTable', diagnostics: 'Diagnostics'):

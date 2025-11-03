@@ -4,14 +4,14 @@ import re
 import os
 
 # Import JSON profiles dynamically - no custom classes needed
-from emitter import Emitter # Keep for type hinting if needed
-from expression_evaluator import evaluate_expression
-from diagnostics import Diagnostics
-from symbol_table import SymbolTable
-from program import Program
-from parser import Parser
-from instruction import Instruction
-from assembler import Assembler
+from core.emitter import Emitter # Keep for type hinting if needed
+from core.expression_evaluator import evaluate_expression
+from core.diagnostics import Diagnostics
+from core.symbol_table import SymbolTable
+from core.program import Program
+from core.parser import Parser
+from core.instruction import Instruction
+from core.assembler import Assembler
 import logging
 
 # --- CPU Profile Template System ---

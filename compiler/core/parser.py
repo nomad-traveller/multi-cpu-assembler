@@ -2,10 +2,10 @@ import re
 from collections import namedtuple
 
 from cpu_profile_base import ConfigCPUProfile
-from diagnostics import Diagnostics
-from instruction import Instruction
-from program import Program
-from expression_parser import ExpressionLexer, ExpressionParser
+from core.diagnostics import Diagnostics
+from core.instruction import Instruction
+from core.program import Program
+from core.expression_parser import ExpressionLexer, ExpressionParser
 
 ParsedLine = namedtuple('ParsedLine', ['label', 'mnemonic', 'operand_str'])
 

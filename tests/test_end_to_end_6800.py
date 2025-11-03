@@ -6,15 +6,15 @@ import os
 from unittest.mock import patch
 from io import StringIO
 
-# Add the tests directory to the path to import modules
-sys.path.insert(0, os.path.dirname(__file__))
+# Add the compiler directory to the path to import modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'compiler'))
 
 from main import CPUProfileFactory, main
-from diagnostics import Diagnostics
-from assembler import Assembler
-from symbol_table import SymbolTable
-from program import Program
-from parser import Parser
+from core.diagnostics import Diagnostics
+from core.assembler import Assembler
+from core.symbol_table import SymbolTable
+from core.program import Program
+from core.parser import Parser
 
 
 class TestEndToEnd6800(unittest.TestCase):
