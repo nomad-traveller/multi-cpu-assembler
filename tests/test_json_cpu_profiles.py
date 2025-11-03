@@ -9,13 +9,13 @@ from unittest.mock import patch, mock_open, MagicMock
 # Add the compiler directory to the path to import modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'compiler'))
 
-from cpu_profile_base import JSONCPUProfile
+from cpu_profile_base import ConfigCPUProfile
 from main import CPUProfileFactory
 from core.diagnostics import Diagnostics
 
 
-class TestJSONCPUProfile(unittest.TestCase):
-    """Test cases for JSONCPUProfile class"""
+class TestConfigCPUProfile(unittest.TestCase):
+    """Test cases for ConfigCPUProfile class"""
 
     def setUp(self):
         """Set up test fixtures"""
@@ -81,7 +81,7 @@ class TestJSONCPUProfile(unittest.TestCase):
     def test_load_valid_profile(self):
         """Test loading a valid JSON profile"""
         with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = JSONCPUProfile(self.diagnostics, "test_profile.json")
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
             
         self.assertEqual(profile.cpu_info["name"], "65C02")
         self.assertEqual(profile.cpu_info["description"], "WDC 65C02 microprocessor")
@@ -90,7 +90,7 @@ class TestJSONCPUProfile(unittest.TestCase):
     def test_get_addressing_modes(self):
         """Test getting addressing mode information"""
         with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = JSONCPUProfile(self.diagnostics, "test_profile.json")
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
             
         modes = profile.get_addressing_mode_enum("IMMEDIATE")
         self.assertEqual(modes.value, 1)  # Enum value
@@ -102,7 +102,7 @@ class TestJSONCPUProfile(unittest.TestCase):
     def test_get_opcode_details(self):
         """Test getting opcode information"""
         with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = JSONCPUProfile(self.diagnostics, "test_profile.json")
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
             
         # Create a mock instruction
         mock_instruction = MagicMock()
@@ -117,7 +117,7 @@ class TestJSONCPUProfile(unittest.TestCase):
     def test_parse_addressing_mode(self):
         """Test parsing addressing modes"""
         with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = JSONCPUProfile(self.diagnostics, "test_profile.json")
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
             
         # Test immediate mode
         mode, value = profile.parse_addressing_mode("#$FF")
@@ -141,13 +141,13 @@ class TestJSONCPUProfile(unittest.TestCase):
     def test_file_not_found(self):
         """Test handling of missing profile file"""
         with self.assertRaises(FileNotFoundError):
-            JSONCPUProfile(self.diagnostics, "nonexistent_file.json")
+            ConfigCPUProfile(self.diagnostics, "nonexistent_file.json")
 
     def test_invalid_json(self):
         """Test handling of invalid JSON"""
         with patch("builtins.open", mock_open(read_data="invalid json content")):
             with self.assertRaises(ValueError):
-                JSONCPUProfile(self.diagnostics, "invalid.json")
+                ConfigCPUProfile(self.diagnostics, "invalid.json")
 
 
 class TestCPUProfileFactory(unittest.TestCase):

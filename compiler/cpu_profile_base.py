@@ -5,15 +5,6 @@ import json
 import os
 import re
 from enum import Enum
-try:
-    import json5
-except ImportError:
-    json5 = None
-
-try:
-    import yaml
-except ImportError:
-    yaml = None
 
 if TYPE_CHECKING:
     from core.parser import Parser
@@ -33,8 +24,8 @@ def create_addressing_mode_enum(cpu_name: str, addressing_modes: dict):
     return Enum(enum_name, enum_members)
 
 
-class JSONCPUProfile:
-    """JSON/YAML-based CPU Profile that loads configuration from JSON5 or YAML files."""
+class ConfigCPUProfile:
+    """Configuration-driven CPU Profile that loads configuration from JSON5 or YAML files."""
     
     def __init__(self, diagnostics, profile_file_path: str):
         self.diagnostics = diagnostics
@@ -48,21 +39,29 @@ class JSONCPUProfile:
             
             with open(profile_file_path, 'r') as f:
                 if file_ext == '.yaml' or file_ext == '.yml':
-                    if yaml is not None:
+                    # Lazy-load YAML library only when needed
+                    try:
+                        import yaml
                         self._profile_data = yaml.safe_load(f)
-                    else:
-                        raise ImportError("PyYAML is required for YAML profile support")
+                    except ImportError:
+                        raise ImportError("To load '.yaml' profiles, please 'pip install PyYAML'")
+                        
                 elif file_ext == '.json':
-                    if json5 is not None:
+                    # Lazy-load json5 library only when needed
+                    try:
+                        import json5
                         self._profile_data = json5.load(f)
-                    else:
+                    except ImportError:
                         # Fallback to regular JSON if json5 not available
                         self._profile_data = json.load(f)
+                        
                 else:
                     # Default to JSON5 for unknown extensions
-                    if json5 is not None:
+                    try:
+                        import json5
                         self._profile_data = json5.load(f)
-                    else:
+                    except ImportError:
+                        # Fallback to regular JSON if json5 not available
                         self._profile_data = json.load(f)
                         
         except FileNotFoundError:
@@ -100,6 +99,10 @@ class JSONCPUProfile:
     @property
     def directives(self) -> dict:
         return self._profile_data.get("directives", {})
+    
+    def get_directive_info(self, directive_name: str) -> dict:
+        """Get directive information including type and properties."""
+        return self.directives.get(directive_name, {})
     
     @property
     def validation_rules(self) -> dict:
@@ -437,6 +440,92 @@ class JSONCPUProfile:
         
         return True
     
+    def handle_directive_pass1(self, instruction, symbol_table, current_address: int) -> int:
+        """Handle directive processing during first pass. Returns new current_address."""
+        from core.expression_evaluator import evaluate_expression
+        
+        directive = instruction.directive
+        directive_info = self.directives.get(directive, {})
+        
+        if directive == "EQU":
+            # For EQU, evaluate the expression and add to symbol table
+            equ_value = evaluate_expression(instruction.operand_value, symbol_table, instruction.line_num)
+            if equ_value is None:
+                raise ValueError(f"Failed to evaluate EQU expression")
+            if not symbol_table.add(instruction.label, equ_value, instruction.line_num):
+                raise ValueError(f"Failed to add symbol '{instruction.label}' to symbol table")
+            instruction.size = 0
+            return current_address
+            
+        elif directive == ".ORG":
+            # For .ORG, evaluate the expression and set new address
+            org_address = evaluate_expression(instruction.operand_value, symbol_table, instruction.line_num)
+            if org_address is None:
+                raise ValueError(f"Failed to evaluate .ORG expression")
+            instruction.address = org_address
+            instruction.size = 0
+            return org_address
+            
+        elif directive in (".BYTE", ".WORD"):
+            # For data directives, set address and calculate size
+            instruction.address = current_address
+            size_multiplier = directive_info.get("size_multiplier", 1)
+            instruction.size = len(instruction.operand_value) * size_multiplier
+            return current_address + instruction.size
+            
+        else:
+            # Unknown directive - set size to 0 and continue
+            instruction.size = 0
+            return current_address
+    
+    def handle_directive_pass2(self, instruction, symbol_table) -> bool:
+        """Handle directive processing during second pass. Returns True on success."""
+        from core.expression_evaluator import evaluate_expression
+        
+        directive = instruction.directive
+        directive_info = self.directives.get(directive, {})
+        
+        if directive == ".BYTE":
+            machine_code = []
+            for v in instruction.operand_value:
+                val = evaluate_expression(v, symbol_table, instruction.line_num)
+                if val is None:
+                    self.diagnostics.error(instruction.line_num, f"Undefined symbol in .BYTE directive.")
+                    return False
+                if not 0 <= val < 256:
+                    self.diagnostics.error(instruction.line_num, f"Byte value '{val}' out of range (0-255).")
+                    return False
+                machine_code.append(val & 0xFF)
+            instruction.machine_code = machine_code
+            return True
+            
+        elif directive == ".WORD":
+            machine_code = []
+            for v in instruction.operand_value:
+                val = evaluate_expression(v, symbol_table, instruction.line_num)
+                if val is None:
+                    self.diagnostics.error(instruction.line_num, f"Undefined symbol in .WORD directive.")
+                    return False
+                if not 0 <= val < 65536:
+                    self.diagnostics.error(instruction.line_num, f"Word value '{val}' out of range (0-65535).")
+                    return False
+                # Check endianness from CPU info
+                endianness = self.cpu_info.get("endianness", "little")
+                if endianness == "little":
+                    machine_code.extend([val & 0xFF, (val >> 8) & 0xFF])
+                else:  # big endian
+                    machine_code.extend([(val >> 8) & 0xFF, val & 0xFF])
+            instruction.machine_code = machine_code
+            return True
+            
+        elif directive in ("EQU", ".ORG", ".DS"):
+            # These directives are handled in pass 1, nothing to do in pass 2
+            return True
+            
+        else:
+            # Unknown directive - skip
+            return True
+
     def encode_instruction(self, instruction, symbol_table) -> bool:
         """Generic instruction encoding using JSON configuration."""
         from core.expression_evaluator import evaluate_expression

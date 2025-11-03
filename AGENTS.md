@@ -5,7 +5,7 @@
 ### Testing
 - Run all tests: `source compiler/.venv/bin/activate && python -m unittest discover tests/`
 - Run specific test file: `source compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles`
-- Run single test method: `source compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles.TestJSONCPUProfiles.test_load_65c02_profile`
+- Run single test method: `source compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles.TestConfigCPUProfile.test_load_65c02_profile`
 - Validate CPU profiles: `source compiler/.venv/bin/activate && python validate_json_profiles.py --all`
 - Interactive testing: `source compiler/.venv/bin/activate && python test_json_interactive.py`
 

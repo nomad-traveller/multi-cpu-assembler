@@ -52,7 +52,7 @@ class CPUProfileFactory:
         if cpu_name not in self._profile_cache:
             raise ValueError(f"CPU profile '{cpu_name}' not found. Available: {self.get_available_cpus()}")
         
-        # No special handling needed - all profiles use generic JSONCPUProfile
+        # No special handling needed - all profiles use generic ConfigCPUProfile
         
         # Generic JSON profile loading
         profile_info = self._profile_cache[cpu_name]
@@ -72,8 +72,8 @@ class CPUProfileFactory:
                 pass
         
         # Fall back to generic JSON profile
-        from cpu_profile_base import JSONCPUProfile
-        return JSONCPUProfile(diagnostics, json_file)
+        from cpu_profile_base import ConfigCPUProfile
+        return ConfigCPUProfile(diagnostics, json_file)
 
 # Initialize the profile factory
 profile_factory = CPUProfileFactory()

@@ -1,7 +1,7 @@
 import re
 from collections import namedtuple
 
-from cpu_profile_base import JSONCPUProfile
+from cpu_profile_base import ConfigCPUProfile
 from .diagnostics import Diagnostics
 from .instruction import Instruction
 from .program import Program
@@ -31,6 +31,16 @@ class _LineParser:
         if not parse_text:
             return ParsedLine(label, None, None)
 
+        # Check for EQU directive without colon label
+        if label is None:
+            parts = parse_text.strip().split(maxsplit=2)
+            if len(parts) == 3 and parts[1].upper() == "EQU":
+                label = parts[0].upper()
+                mnemonic = "EQU"
+                operand_str = parts[2]
+                logger.debug(f"Parsed EQU with implicit label: '{label}' = '{operand_str}'")
+                return ParsedLine(label, mnemonic, operand_str)
+
         return self._extract_mnemonic_and_operand(parse_text, label, logger)
 
     def _strip_comment(self, line: str, logger) -> str:
@@ -51,44 +61,21 @@ class _LineParser:
             return label, rest.strip()
         return None, text
 
-    def _parse_equ_line(self, text: str) -> ParsedLine | None:
-        """Parses a line as an EQU directive. Returns ParsedLine if it matches, else None."""
-        # Use a specific regex to find 'EQU' as a whole word, not part of another word.
-        match = re.match(r'([A-Z_][A-Z0-9_]*)\s+EQU\s+(.*)', text, re.IGNORECASE)
-        if not match:
-            return None
-
-        label, operand_str = match.groups()
-        return ParsedLine(label.upper(), "EQU", operand_str)
-
-    def _check_for_invalid_equ(self, text: str, existing_label: str | None):
-        if existing_label and re.search(r'\s+EQU\s+', text, re.IGNORECASE):
-            raise ValueError("Cannot have a colon-terminated label and an EQU on the same line.")
-
     def _extract_mnemonic_and_operand(self, text: str, existing_label: str | None, logger) -> ParsedLine:
-        """Extracts the mnemonic and operand, handling the special case for EQU."""
-        # Explicitly check for the invalid case of LABEL: ... EQU ... before any other parsing.
-        self._check_for_invalid_equ(text, existing_label)
-
-        # First, try to parse it as a special-cased EQU directive.
-        equ_line = self._parse_equ_line(text)
-        if equ_line:
-            logger.debug(f"Parsed as EQU directive: {equ_line}")
-            return equ_line
-
-        # If not an EQU, parse as a standard mnemonic and operand.
+        """Extracts the mnemonic and operand."""
+        # Parse as a standard mnemonic and operand.
         parts = text.strip().split(maxsplit=1)
         mnemonic = parts[0].upper()
         operand_str = parts[1] if len(parts) > 1 else None
         return ParsedLine(existing_label, mnemonic, operand_str)
 
 class Parser:
-    def __init__(self, cpu_profile: JSONCPUProfile, diagnostics: 'Diagnostics'):
+    def __init__(self, cpu_profile: ConfigCPUProfile, diagnostics: 'Diagnostics'):
         """
         Initializes the Parser with a CPU profile and a diagnostics object.
 
         Args:
-            cpu_profile (JSONCPUProfile): The CPU profile to use for instruction and directive parsing.
+            cpu_profile (ConfigCPUProfile): The CPU profile to use for instruction and directive parsing.
         """
         self.cpu_profile = cpu_profile
         self.diagnostics = diagnostics

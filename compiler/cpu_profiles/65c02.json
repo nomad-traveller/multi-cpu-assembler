@@ -1751,21 +1751,37 @@
   },
   directives: {
     ".ORG": {
+      type: "origin_set",
       description: "Set origin address",
       operand_count: 1,
       operand_type: "expression",
     },
     ".BYTE": {
+      type: "data_define",
       description: "Define byte data",
       operand_count: "variable",
       operand_type: "expression_list",
       size_multiplier: 1,
     },
     ".WORD": {
+      type: "data_define",
       description: "Define word data",
       operand_count: "variable",
       operand_type: "expression_list",
       size_multiplier: 2,
+    },
+    EQU: {
+      type: "symbol_equate",
+      description: "Equate symbol to value",
+      operand_count: 1,
+      operand_type: "expression",
+      size: 0,
+    },
+    ".DS": {
+      type: "storage_define",
+      description: "Define storage (reserve bytes)",
+      operand_count: 1,
+      operand_type: "expression",
     },
   },
   post_processing: {

@@ -1,11 +1,11 @@
-from cpu_profile_base import JSONCPUProfile
+from cpu_profile_base import ConfigCPUProfile
 from .symbol_table import SymbolTable
 from .diagnostics import Diagnostics
 from .program import Program
 from .expression_evaluator import evaluate_expression
 
 class Assembler:
-    def __init__(self, cpu_profile: JSONCPUProfile, symbol_table: 'SymbolTable', diagnostics: 'Diagnostics'):
+    def __init__(self, cpu_profile: ConfigCPUProfile, symbol_table: 'SymbolTable', diagnostics: 'Diagnostics'):
         self.cpu_profile = cpu_profile
         self.symbol_table = symbol_table
         self.diagnostics = diagnostics
@@ -13,33 +13,81 @@ class Assembler:
     def _first_pass(self, program: 'Program', start_address):
         current_address = start_address
         for instr in program.instructions:
-            if instr.directive == "EQU":
-                # For EQU, we must evaluate the expression and add the *result* to the symbol table.
-                equ_value = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
-                if equ_value is None:
-                    return False # Error already reported
-                if not self.symbol_table.add(instr.label, equ_value, instr.line_num):
+            if instr.directive:
+                # Get directive info from profile
+                directive_info = self.cpu_profile.get_directive_info(instr.directive)
+                if not directive_info:
+                    self.diagnostics.error(instr.line_num, f"Unknown directive '{instr.directive}'")
                     return False
-                instr.size = 0
+
+                directive_type = directive_info.get("type")
+
+                if directive_type == "symbol_equate":  # e.g., EQU
+                    if not instr.label:
+                        self.diagnostics.error(instr.line_num, f"Directive '{instr.directive}' requires a label.")
+                        return False
+                    equ_value = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
+                    if equ_value is None:
+                        return False
+                    if not self.symbol_table.add(instr.label, equ_value, instr.line_num):
+                        return False
+                    instr.size = 0
+                    # Don't add label to symbol table again (already handled by EQU)
+                    
+                elif directive_type == "origin_set":  # e.g., .ORG
+                    org_address = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
+                    if org_address is None:
+                        return False
+                    current_address = org_address
+                    instr.address = current_address
+                    instr.size = 0
+                    # Add label if present (labels after .ORG point to new address)
+                    if instr.label:
+                        if not self.symbol_table.add(instr.label, current_address, instr.line_num):
+                            return False
+                            
+                elif directive_type == "data_define":  # e.g., .BYTE, .WORD
+                    instr.address = current_address
+                    size_multiplier = directive_info.get("size_multiplier", 1)
+                    # Size is calculated based on number of operands
+                    instr.size = len(instr.operand_value) * size_multiplier
+                    current_address += instr.size
+                    # Add label if present (labels before data directives point to data)
+                    if instr.label:
+                        if not self.symbol_table.add(instr.label, instr.address, instr.line_num):
+                            return False
+                            
+                elif directive_type == "storage_define":  # e.g., .DS
+                    instr.address = current_address
+                    # Size is the value of the operand (number of bytes to reserve)
+                    storage_size = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
+                    if storage_size is None:
+                        return False
+                    instr.size = storage_size
+                    current_address += instr.size
+                    # Add label if present (labels before storage directives point to storage)
+                    if instr.label:
+                        if not self.symbol_table.add(instr.label, instr.address, instr.line_num):
+                            return False
+                            
+                else:
+                    # Unknown directive type - try legacy profile handling
+                    try:
+                        current_address = self.cpu_profile.handle_directive_pass1(instr, self.symbol_table, current_address)
+                        # For legacy compatibility, check if this is a symbol_equate type
+                        if directive_type != "symbol_equate" and instr.label:
+                            if not self.symbol_table.add(instr.label, current_address, instr.line_num):
+                                return False
+                    except ValueError as e:
+                        self.diagnostics.error(instr.line_num, str(e))
+                        return False
                 continue
-            if instr.directive == ".ORG":
-                # The operand_value from the parser is a token list/string.
-                # We must evaluate it to get the integer address.
-                org_address = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
-                if org_address is None:
-                    return False # Error already reported by evaluator
-                current_address = org_address
-                instr.address = current_address
-                instr.size = 0
 
             if instr.label:
                 if not self.symbol_table.add(instr.label, current_address, instr.line_num):
                     return False
 
-            if instr.directive in (".BYTE", ".WORD"):
-                instr.address = current_address
-                current_address += instr.size
-            elif instr.mnemonic:
+            if instr.mnemonic:
                 instr.address = current_address
                 details = self.cpu_profile.get_opcode_details(instr, None)
                 if details:
@@ -61,30 +109,10 @@ class Assembler:
 
     def _second_pass(self, program: 'Program'):
         for instr in program.instructions:
-            if instr.directive == ".BYTE":
-                machine_code = []
-                for v in instr.operand_value:
-                    val = evaluate_expression(v, self.symbol_table, instr.line_num)
-                    if val is None:
-                        self.diagnostics.error(instr.line_num, f"Undefined symbol '{v}' in .BYTE directive.")
-                        return False
-                    if not 0 <= val < 256:
-                        self.diagnostics.error(instr.line_num, f"Byte value '{val}' out of range (0-255).")
-                        return False
-                    machine_code.append(val & 0xFF)
-                instr.machine_code = machine_code
-            elif instr.directive == ".WORD":
-                machine_code = []
-                for v in instr.operand_value:
-                    val = evaluate_expression(v, self.symbol_table, instr.line_num)
-                    if val is None:
-                        self.diagnostics.error(instr.line_num, f"Undefined symbol '{v}' in .WORD directive.")
-                        return False
-                    if not 0 <= val < 65536:
-                        self.diagnostics.error(instr.line_num, f"Word value '{val}' out of range (0-65535).")
-                        return False
-                    machine_code.extend([val & 0xFF, (val >> 8) & 0xFF])
-                instr.machine_code = machine_code
+            if instr.directive:
+                # Let the profile handle its own directive logic
+                if not self.cpu_profile.handle_directive_pass2(instr, self.symbol_table):
+                    return False
             elif instr.mnemonic:
                 try:
                     if not self.cpu_profile.encode_instruction(instr, self.symbol_table):

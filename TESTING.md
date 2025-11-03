@@ -178,7 +178,7 @@ Select profile to test (0-5):
 
 #### 1. CPU Profile Tests (`test_json_cpu_profiles.py`)
 **10 tests covering:**
-- JSONCPUProfile class functionality (JSON5/YAML)
+- ConfigCPUProfile class functionality (JSON5/YAML)
 - CPUProfileFactory testing
 - Error handling and validation
 - Addressing mode parsing
@@ -225,7 +225,7 @@ def test_factory_invalid_cpu(self)
 . compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles
 
 # Run specific test method
-. compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles.TestJSONCPUProfiles.test_load_65c02_profile
+. compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles.TestConfigCPUProfile.test_load_65c02_profile
 
 # Run with verbose output
 . compiler/.venv/bin/activate && python -m unittest discover -s tests -p "test_*.py" -v

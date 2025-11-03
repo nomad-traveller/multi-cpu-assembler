@@ -12,10 +12,10 @@ from typing import Dict, Any, List
 # Add compiler directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'compiler'))
 
-from cpu_profile_base import JSONCPUProfile
+from cpu_profile_base import ConfigCPUProfile
 from core.diagnostics import Diagnostics
 
-def test_addressing_mode_parsing(profile: JSONCPUProfile, test_cases: List[str]):
+def test_addressing_mode_parsing(profile: ConfigCPUProfile, test_cases: List[str]):
     """Test addressing mode parsing with various test cases."""
     print("\n🔧 Testing Addressing Mode Parsing:")
     print("-" * 40)
@@ -27,7 +27,7 @@ def test_addressing_mode_parsing(profile: JSONCPUProfile, test_cases: List[str])
         except Exception as e:
             print(f"❌ '{test_case}' -> Error: {e}")
 
-def test_opcode_lookup(profile: JSONCPUProfile, test_instructions: List[tuple]):
+def test_opcode_lookup(profile: ConfigCPUProfile, test_instructions: List[tuple]):
     """Test opcode lookup for various instructions."""
     print("\n🔍 Testing Opcode Lookup:")
     print("-" * 40)
@@ -62,7 +62,7 @@ def test_cpu_profile_interactive(file_path: str):
     
     try:
         diagnostics = Diagnostics()
-        profile = JSONCPUProfile(diagnostics, file_path)
+        profile = ConfigCPUProfile(diagnostics, file_path)
         
         print(f"\n📋 CPU Information:")
         print(f"   Name: {profile.cpu_info.get('name', 'Unknown')}")

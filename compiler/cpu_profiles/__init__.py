@@ -1,5 +1,5 @@
 # cpu_profiles package
-# Re-export JSONCPUProfile as the main CPU profile interface
-from ..cpu_profile_base import JSONCPUProfile
+# Re-export ConfigCPUProfile as the main CPU profile interface
+from ..cpu_profile_base import ConfigCPUProfile
 
-__all__ = ['JSONCPUProfile']
+__all__ = ['ConfigCPUProfile']
