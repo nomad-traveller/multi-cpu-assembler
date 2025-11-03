@@ -10,6 +10,11 @@ try:
 except ImportError:
     json5 = None
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 if TYPE_CHECKING:
     from core.parser import Parser
 
@@ -29,27 +34,41 @@ def create_addressing_mode_enum(cpu_name: str, addressing_modes: dict):
 
 
 class JSONCPUProfile:
-    """JSON-based CPU Profile that loads configuration from JSON files."""
+    """JSON/YAML-based CPU Profile that loads configuration from JSON5 or YAML files."""
     
-    def __init__(self, diagnostics, json_file_path: str):
+    def __init__(self, diagnostics, profile_file_path: str):
         self.diagnostics = diagnostics
-        self._load_profile(json_file_path)
+        self._load_profile(profile_file_path)
         self._create_addressing_mode_enum()
     
-    def _load_profile(self, json_file_path: str):
-        """Load CPU profile from JSON5 file."""
+    def _load_profile(self, profile_file_path: str):
+        """Load CPU profile from JSON5 or YAML file."""
         try:
-            if json5 is not None:
-                with open(json_file_path, 'r') as f:
-                    self._profile_data = json5.load(f)
-            else:
-                # Fallback to regular JSON if json5 not available
-                with open(json_file_path, 'r') as f:
-                    self._profile_data = json.load(f)
+            file_ext = os.path.splitext(profile_file_path)[1].lower()
+            
+            with open(profile_file_path, 'r') as f:
+                if file_ext == '.yaml' or file_ext == '.yml':
+                    if yaml is not None:
+                        self._profile_data = yaml.safe_load(f)
+                    else:
+                        raise ImportError("PyYAML is required for YAML profile support")
+                elif file_ext == '.json':
+                    if json5 is not None:
+                        self._profile_data = json5.load(f)
+                    else:
+                        # Fallback to regular JSON if json5 not available
+                        self._profile_data = json.load(f)
+                else:
+                    # Default to JSON5 for unknown extensions
+                    if json5 is not None:
+                        self._profile_data = json5.load(f)
+                    else:
+                        self._profile_data = json.load(f)
+                        
         except FileNotFoundError:
-            raise FileNotFoundError(f"CPU profile file not found: {json_file_path}")
+            raise FileNotFoundError(f"CPU profile file not found: {profile_file_path}")
         except Exception as e:
-            raise ValueError(f"Invalid JSON5/JSON in CPU profile {json_file_path}: {e}")
+            raise ValueError(f"Invalid profile format in {profile_file_path}: {e}")
     
     def _create_addressing_mode_enum(self):
         """Create dynamic Enum for addressing modes."""

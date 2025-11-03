@@ -1,0 +1,1229 @@
+# 65c02.yaml
+# Multi-CPU Assembler CPU Profile - YAML Format
+# Generated from 65c02.json
+
+cpu_info:
+  name: 65C02
+  description: CMOS 6502 processor with additional instructions
+  data_width: 8
+  address_width: 16
+  endianness: little
+addressing_modes:
+  IMPLIED: 0
+  ACCUMULATOR: 1
+  IMMEDIATE: 2
+  ZEROPAGE: 3
+  ZEROPAGE_X: 4
+  ZEROPAGE_Y: 5
+  ABSOLUTE: 6
+  ABSOLUTE_X: 7
+  ABSOLUTE_Y: 8
+  INDIRECT: 9
+  INDIRECT_X: 10
+  INDIRECT_Y: 11
+  RELATIVE: 12
+  ZEROPAGE_INDIRECT: 13
+addressing_mode_patterns:
+- pattern: ^(BRK|CLC|CLD|CLI|CLV|DEX|DEY|INX|INY|NOP|PHA|PHP|PHX|PHY|PLA|PLP|PLX|PLY|RTI|RTS|SEC|SED|SEI|TAX|TAY|TSX|TXA|TXS|TYA)$
+  mode: IMPLIED
+  group_index: null
+  flags:
+  - IGNORECASE
+- pattern: ^[aA]$
+  mode: ACCUMULATOR
+  group_index: null
+- pattern: ^#(\$?[0-9A-F]+|[A-Z_][A-Z0-9_]*)$
+  mode: IMMEDIATE
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^\((\$?[0-9A-F]{1,2}),X\)$
+  mode: INDIRECT_X
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^\((\$?[0-9A-F]{1,2})\),Y$
+  mode: INDIRECT_Y
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^\((\$?[0-9A-F]{3,4})\)$
+  mode: INDIRECT
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^\((\$?[0-9A-F]{1,2})\)$
+  mode: ZEROPAGE_INDIRECT
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^(\$?[0-9A-F]{3,4}),X$
+  mode: ABSOLUTE_X
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^(\$?[0-9A-F]{3,4}),Y$
+  mode: ABSOLUTE_Y
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^(\$?[0-9A-F]{1,2}),X$
+  mode: ZEROPAGE_X
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^(\$?[0-9A-F]{1,2}),Y$
+  mode: ZEROPAGE_Y
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^(\$?[0-9A-F]{3,4})$
+  mode: ABSOLUTE
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^(\$?[0-9A-F]{1,2})$
+  mode: ZEROPAGE
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^([A-Z_][A-Z0-9_]*)$
+  mode: ABSOLUTE
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^([0-9]+)$
+  mode: ABSOLUTE
+  group_index: 1
+branch_mnemonics:
+- BCC
+- BCS
+- BEQ
+- BMI
+- BNE
+- BPL
+- BVC
+- BVS
+- BRA
+opcodes:
+  ADC:
+    IMMEDIATE:
+    - '0x69'
+    - 1
+    - base: 2
+    - NVZC
+    ZEROPAGE:
+    - '0x65'
+    - 1
+    - base: 3
+    - NVZC
+    ZEROPAGE_X:
+    - '0x75'
+    - 1
+    - base: 4
+    - NVZC
+    ABSOLUTE:
+    - '0x6d'
+    - 2
+    - base: 4
+    - NVZC
+    ABSOLUTE_X:
+    - '0x7d'
+    - 2
+    - base: 4
+      page: 1
+    - NVZC
+    ABSOLUTE_Y:
+    - '0x79'
+    - 2
+    - base: 4
+      page: 1
+    - NVZC
+    INDIRECT_X:
+    - '0x61'
+    - 1
+    - base: 6
+    - NVZC
+    INDIRECT_Y:
+    - '0x71'
+    - 1
+    - base: 5
+      page: 1
+    - NVZC
+    ZEROPAGE_INDIRECT:
+    - '0x72'
+    - 1
+    - base: 5
+    - NVZC
+  AND:
+    IMMEDIATE:
+    - '0x29'
+    - 1
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0x25'
+    - 1
+    - base: 3
+    - NZ
+    ZEROPAGE_X:
+    - '0x35'
+    - 1
+    - base: 4
+    - NZ
+    ABSOLUTE:
+    - '0x2d'
+    - 2
+    - base: 4
+    - NZ
+    ABSOLUTE_X:
+    - '0x3d'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    ABSOLUTE_Y:
+    - '0x39'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    INDIRECT_X:
+    - '0x21'
+    - 1
+    - base: 6
+    - NZ
+    INDIRECT_Y:
+    - '0x31'
+    - 1
+    - base: 5
+      page: 1
+    - NZ
+    ZEROPAGE_INDIRECT:
+    - '0x32'
+    - 1
+    - base: 5
+    - NZ
+  ASL:
+    ACCUMULATOR:
+    - '0xa'
+    - 0
+    - base: 2
+    - NZC
+    ZEROPAGE:
+    - '0x6'
+    - 1
+    - base: 5
+    - NZC
+    ZEROPAGE_X:
+    - '0x16'
+    - 1
+    - base: 6
+    - NZC
+    ABSOLUTE:
+    - '0xe'
+    - 2
+    - base: 6
+    - NZC
+    ABSOLUTE_X:
+    - '0x1e'
+    - 2
+    - base: 7
+    - NZC
+  BCC:
+    RELATIVE:
+    - '0x90'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BCS:
+    RELATIVE:
+    - '0xb0'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BEQ:
+    RELATIVE:
+    - '0xf0'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BIT:
+    IMMEDIATE:
+    - '0x89'
+    - 1
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0x24'
+    - 1
+    - base: 3
+    - NVZ
+    ABSOLUTE:
+    - '0x2c'
+    - 2
+    - base: 4
+    - NVZ
+    ZEROPAGE_X:
+    - '0x34'
+    - 1
+    - base: 4
+    - NVZ
+    ABSOLUTE_X:
+    - '0x3c'
+    - 2
+    - base: 4
+      page: 1
+    - NVZ
+  BMI:
+    RELATIVE:
+    - '0x30'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BNE:
+    RELATIVE:
+    - '0xd0'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BPL:
+    RELATIVE:
+    - '0x10'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BRA:
+    RELATIVE:
+    - '0x80'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BRK:
+    IMPLIED:
+    - '0x0'
+    - 0
+    - base: 7
+    - B
+  BVC:
+    RELATIVE:
+    - '0x50'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  BVS:
+    RELATIVE:
+    - '0x70'
+    - 1
+    - base: 2
+      branch: 1
+      page: 1
+    - ''
+  CLC:
+    IMPLIED:
+    - '0x18'
+    - 0
+    - base: 2
+    - C
+  CLD:
+    IMPLIED:
+    - '0xd8'
+    - 0
+    - base: 2
+    - D
+  CLI:
+    IMPLIED:
+    - '0x58'
+    - 0
+    - base: 2
+    - I
+  CLV:
+    IMPLIED:
+    - '0xb8'
+    - 0
+    - base: 2
+    - V
+  CMP:
+    IMMEDIATE:
+    - '0xc9'
+    - 1
+    - base: 2
+    - NZC
+    ZEROPAGE:
+    - '0xc5'
+    - 1
+    - base: 3
+    - NZC
+    ZEROPAGE_X:
+    - '0xd5'
+    - 1
+    - base: 4
+    - NZC
+    ABSOLUTE:
+    - '0xcd'
+    - 2
+    - base: 4
+    - NZC
+    ABSOLUTE_X:
+    - '0xdd'
+    - 2
+    - base: 4
+      page: 1
+    - NZC
+    ABSOLUTE_Y:
+    - '0xd9'
+    - 2
+    - base: 4
+      page: 1
+    - NZC
+    INDIRECT_X:
+    - '0xc1'
+    - 1
+    - base: 6
+    - NZC
+    INDIRECT_Y:
+    - '0xd1'
+    - 1
+    - base: 5
+      page: 1
+    - NZC
+    ZEROPAGE_INDIRECT:
+    - '0xd2'
+    - 1
+    - base: 5
+    - NZC
+  CPX:
+    IMMEDIATE:
+    - '0xe0'
+    - 1
+    - base: 2
+    - NZC
+    ZEROPAGE:
+    - '0xe4'
+    - 1
+    - base: 3
+    - NZC
+    ABSOLUTE:
+    - '0xec'
+    - 2
+    - base: 4
+    - NZC
+  CPY:
+    IMMEDIATE:
+    - '0xc0'
+    - 1
+    - base: 2
+    - NZC
+    ZEROPAGE:
+    - '0xc4'
+    - 1
+    - base: 3
+    - NZC
+    ABSOLUTE:
+    - '0xcc'
+    - 2
+    - base: 4
+    - NZC
+  DEC:
+    ACCUMULATOR:
+    - '0x3a'
+    - 0
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0xc6'
+    - 1
+    - base: 5
+    - NZ
+    ZEROPAGE_X:
+    - '0xd6'
+    - 1
+    - base: 6
+    - NZ
+    ABSOLUTE:
+    - '0xce'
+    - 2
+    - base: 6
+    - NZ
+    ABSOLUTE_X:
+    - '0xde'
+    - 2
+    - base: 7
+    - NZ
+  DEX:
+    IMPLIED:
+    - '0xca'
+    - 0
+    - base: 2
+    - NZ
+  DEY:
+    IMPLIED:
+    - '0x88'
+    - 0
+    - base: 2
+    - NZ
+  EOR:
+    IMMEDIATE:
+    - '0x49'
+    - 1
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0x45'
+    - 1
+    - base: 3
+    - NZ
+    ZEROPAGE_X:
+    - '0x55'
+    - 1
+    - base: 4
+    - NZ
+    ABSOLUTE:
+    - '0x4d'
+    - 2
+    - base: 4
+    - NZ
+    ABSOLUTE_X:
+    - '0x5d'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    ABSOLUTE_Y:
+    - '0x59'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    INDIRECT_X:
+    - '0x41'
+    - 1
+    - base: 6
+    - NZ
+    INDIRECT_Y:
+    - '0x51'
+    - 1
+    - base: 5
+      page: 1
+    - NZ
+    ZEROPAGE_INDIRECT:
+    - '0x52'
+    - 1
+    - base: 5
+    - NZ
+  INC:
+    ACCUMULATOR:
+    - '0x1a'
+    - 0
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0xe6'
+    - 1
+    - base: 5
+    - NZ
+    ZEROPAGE_X:
+    - '0xf6'
+    - 1
+    - base: 6
+    - NZ
+    ABSOLUTE:
+    - '0xee'
+    - 2
+    - base: 6
+    - NZ
+    ABSOLUTE_X:
+    - '0xfe'
+    - 2
+    - base: 7
+    - NZ
+  INX:
+    IMPLIED:
+    - '0xe8'
+    - 0
+    - base: 2
+    - NZ
+  INY:
+    IMPLIED:
+    - '0xc8'
+    - 0
+    - base: 2
+    - NZ
+  JMP:
+    ABSOLUTE:
+    - '0x4c'
+    - 2
+    - base: 3
+    - ''
+    INDIRECT:
+    - '0x6c'
+    - 2
+    - base: 5
+    - ''
+    ABSOLUTE_X:
+    - '0x7c'
+    - 2
+    - base: 6
+    - ''
+  JSR:
+    ABSOLUTE:
+    - '0x20'
+    - 2
+    - base: 6
+    - ''
+  LDA:
+    IMMEDIATE:
+    - '0xa9'
+    - 1
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0xa5'
+    - 1
+    - base: 3
+    - NZ
+    ZEROPAGE_X:
+    - '0xb5'
+    - 1
+    - base: 4
+    - NZ
+    ABSOLUTE:
+    - '0xad'
+    - 2
+    - base: 4
+    - NZ
+    ABSOLUTE_X:
+    - '0xbd'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    ABSOLUTE_Y:
+    - '0xb9'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    INDIRECT_X:
+    - '0xa1'
+    - 1
+    - base: 6
+    - NZ
+    INDIRECT_Y:
+    - '0xb1'
+    - 1
+    - base: 5
+      page: 1
+    - NZ
+    ZEROPAGE_INDIRECT:
+    - '0xb2'
+    - 1
+    - base: 5
+    - NZ
+  LDX:
+    IMMEDIATE:
+    - '0xa2'
+    - 1
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0xa6'
+    - 1
+    - base: 3
+    - NZ
+    ZEROPAGE_Y:
+    - '0xb6'
+    - 1
+    - base: 4
+    - NZ
+    ABSOLUTE:
+    - '0xae'
+    - 2
+    - base: 4
+    - NZ
+    ABSOLUTE_Y:
+    - '0xbe'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+  LDY:
+    IMMEDIATE:
+    - '0xa0'
+    - 1
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0xa4'
+    - 1
+    - base: 3
+    - NZ
+    ZEROPAGE_X:
+    - '0xb4'
+    - 1
+    - base: 4
+    - NZ
+    ABSOLUTE:
+    - '0xac'
+    - 2
+    - base: 4
+    - NZ
+    ABSOLUTE_X:
+    - '0xbc'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+  LSR:
+    ACCUMULATOR:
+    - '0x4a'
+    - 0
+    - base: 2
+    - NZC
+    ZEROPAGE:
+    - '0x46'
+    - 1
+    - base: 5
+    - NZC
+    ZEROPAGE_X:
+    - '0x56'
+    - 1
+    - base: 6
+    - NZC
+    ABSOLUTE:
+    - '0x4e'
+    - 2
+    - base: 6
+    - NZC
+    ABSOLUTE_X:
+    - '0x5e'
+    - 2
+    - base: 7
+    - NZC
+  NOP:
+    IMPLIED:
+    - '0xea'
+    - 0
+    - base: 2
+    - ''
+  ORA:
+    IMMEDIATE:
+    - '0x9'
+    - 1
+    - base: 2
+    - NZ
+    ZEROPAGE:
+    - '0x5'
+    - 1
+    - base: 3
+    - NZ
+    ZEROPAGE_X:
+    - '0x15'
+    - 1
+    - base: 4
+    - NZ
+    ABSOLUTE:
+    - '0xd'
+    - 2
+    - base: 4
+    - NZ
+    ABSOLUTE_X:
+    - '0x1d'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    ABSOLUTE_Y:
+    - '0x19'
+    - 2
+    - base: 4
+      page: 1
+    - NZ
+    INDIRECT_X:
+    - '0x1'
+    - 1
+    - base: 6
+    - NZ
+    INDIRECT_Y:
+    - '0x11'
+    - 1
+    - base: 5
+      page: 1
+    - NZ
+    ZEROPAGE_INDIRECT:
+    - '0x12'
+    - 1
+    - base: 5
+    - NZ
+  PHA:
+    IMPLIED:
+    - '0x48'
+    - 0
+    - base: 3
+    - ''
+  PHP:
+    IMPLIED:
+    - '0x8'
+    - 0
+    - base: 3
+    - ''
+  PHX:
+    IMPLIED:
+    - '0xda'
+    - 0
+    - base: 3
+    - ''
+  PHY:
+    IMPLIED:
+    - '0x5a'
+    - 0
+    - base: 3
+    - ''
+  PLA:
+    IMPLIED:
+    - '0x68'
+    - 0
+    - base: 4
+    - NZ
+  PLP:
+    IMPLIED:
+    - '0x28'
+    - 0
+    - base: 4
+    - NVZC
+  PLX:
+    IMPLIED:
+    - '0xfa'
+    - 0
+    - base: 4
+    - NZ
+  PLY:
+    IMPLIED:
+    - '0x7a'
+    - 0
+    - base: 4
+    - NZ
+  ROL:
+    ACCUMULATOR:
+    - '0x2a'
+    - 0
+    - base: 2
+    - NZC
+    ZEROPAGE:
+    - '0x26'
+    - 1
+    - base: 5
+    - NZC
+    ZEROPAGE_X:
+    - '0x36'
+    - 1
+    - base: 6
+    - NZC
+    ABSOLUTE:
+    - '0x2e'
+    - 2
+    - base: 6
+    - NZC
+    ABSOLUTE_X:
+    - '0x3e'
+    - 2
+    - base: 7
+    - NZC
+  ROR:
+    ACCUMULATOR:
+    - '0x6a'
+    - 0
+    - base: 2
+    - NZC
+    ZEROPAGE:
+    - '0x66'
+    - 1
+    - base: 5
+    - NZC
+    ZEROPAGE_X:
+    - '0x76'
+    - 1
+    - base: 6
+    - NZC
+    ABSOLUTE:
+    - '0x6e'
+    - 2
+    - base: 6
+    - NZC
+    ABSOLUTE_X:
+    - '0x7e'
+    - 2
+    - base: 7
+    - NZC
+  RTI:
+    IMPLIED:
+    - '0x40'
+    - 0
+    - base: 6
+    - NVZC
+  RTS:
+    IMPLIED:
+    - '0x60'
+    - 0
+    - base: 6
+    - ''
+  SBC:
+    IMMEDIATE:
+    - '0xe9'
+    - 1
+    - base: 2
+    - NVZC
+    ZEROPAGE:
+    - '0xe5'
+    - 1
+    - base: 3
+    - NVZC
+    ZEROPAGE_X:
+    - '0xf5'
+    - 1
+    - base: 4
+    - NVZC
+    ABSOLUTE:
+    - '0xed'
+    - 2
+    - base: 4
+    - NVZC
+    ABSOLUTE_X:
+    - '0xfd'
+    - 2
+    - base: 4
+      page: 1
+    - NVZC
+    ABSOLUTE_Y:
+    - '0xf9'
+    - 2
+    - base: 4
+      page: 1
+    - NVZC
+    INDIRECT_X:
+    - '0xe1'
+    - 1
+    - base: 6
+    - NVZC
+    INDIRECT_Y:
+    - '0xf1'
+    - 1
+    - base: 5
+      page: 1
+    - NVZC
+    ZEROPAGE_INDIRECT:
+    - '0xf2'
+    - 1
+    - base: 5
+    - NVZC
+  SEC:
+    IMPLIED:
+    - '0x38'
+    - 0
+    - base: 2
+    - C
+  SED:
+    IMPLIED:
+    - '0xf8'
+    - 0
+    - base: 2
+    - D
+  SEI:
+    IMPLIED:
+    - '0x78'
+    - 0
+    - base: 2
+    - I
+  STA:
+    ZEROPAGE:
+    - '0x85'
+    - 1
+    - base: 3
+    - ''
+    ZEROPAGE_X:
+    - '0x95'
+    - 1
+    - base: 4
+    - ''
+    ABSOLUTE:
+    - '0x8d'
+    - 2
+    - base: 4
+    - ''
+    ABSOLUTE_X:
+    - '0x9d'
+    - 2
+    - base: 5
+    - ''
+    ABSOLUTE_Y:
+    - '0x99'
+    - 2
+    - base: 5
+    - ''
+    INDIRECT_X:
+    - '0x81'
+    - 1
+    - base: 6
+    - ''
+    INDIRECT_Y:
+    - '0x91'
+    - 1
+    - base: 6
+    - ''
+    ZEROPAGE_INDIRECT:
+    - '0x92'
+    - 1
+    - base: 5
+    - ''
+  STX:
+    ZEROPAGE:
+    - '0x86'
+    - 1
+    - base: 3
+    - ''
+    ZEROPAGE_Y:
+    - '0x96'
+    - 1
+    - base: 4
+    - ''
+    ABSOLUTE:
+    - '0x8e'
+    - 2
+    - base: 4
+    - ''
+  STY:
+    ZEROPAGE:
+    - '0x84'
+    - 1
+    - base: 3
+    - ''
+    ZEROPAGE_X:
+    - '0x94'
+    - 1
+    - base: 4
+    - ''
+    ABSOLUTE:
+    - '0x8c'
+    - 2
+    - base: 4
+    - ''
+  STZ:
+    ZEROPAGE:
+    - '0x64'
+    - 1
+    - base: 3
+    - ''
+    ZEROPAGE_X:
+    - '0x74'
+    - 1
+    - base: 4
+    - ''
+    ABSOLUTE:
+    - '0x9c'
+    - 2
+    - base: 4
+    - ''
+    ABSOLUTE_X:
+    - '0x9e'
+    - 2
+    - base: 5
+    - ''
+  TAX:
+    IMPLIED:
+    - '0xaa'
+    - 0
+    - base: 2
+    - NZ
+  TAY:
+    IMPLIED:
+    - '0xa8'
+    - 0
+    - base: 2
+    - NZ
+  TRB:
+    ZEROPAGE:
+    - '0x14'
+    - 1
+    - base: 5
+    - Z
+    ABSOLUTE:
+    - '0x1c'
+    - 2
+    - base: 6
+    - Z
+  TSB:
+    ZEROPAGE:
+    - '0x4'
+    - 1
+    - base: 5
+    - Z
+    ABSOLUTE:
+    - '0xc'
+    - 2
+    - base: 6
+    - Z
+  TSX:
+    IMPLIED:
+    - '0xba'
+    - 0
+    - base: 2
+    - NZ
+  TXA:
+    IMPLIED:
+    - '0x8a'
+    - 0
+    - base: 2
+    - NZ
+  TXS:
+    IMPLIED:
+    - '0x9a'
+    - 0
+    - base: 2
+    - ''
+  TYA:
+    IMPLIED:
+    - '0x98'
+    - 0
+    - base: 2
+    - NZ
+directives:
+  .ORG:
+    description: Set origin address
+    operand_count: 1
+    operand_type: expression
+  .BYTE:
+    description: Define byte data
+    operand_count: variable
+    operand_type: expression_list
+    size_multiplier: 1
+  .WORD:
+    description: Define word data
+    operand_count: variable
+    operand_type: expression_list
+    size_multiplier: 2
+post_processing:
+  branch_instructions:
+    mnemonics:
+    - BCC
+    - BCS
+    - BEQ
+    - BMI
+    - BNE
+    - BPL
+    - BVC
+    - BVS
+    - BRA
+    force_mode: RELATIVE
+  automatic_mode_conversion:
+  - from_mode: ABSOLUTE
+    to_mode: ZEROPAGE
+    threshold: 255
+  - from_mode: ABSOLUTE_X
+    to_mode: ZEROPAGE_X
+    threshold: 255
+  - from_mode: ABSOLUTE_Y
+    to_mode: ZEROPAGE_Y
+    threshold: 255
+validation_rules:
+  accumulator_only:
+    ASL:
+    - IMMEDIATE
+    LSR:
+    - IMMEDIATE
+    ROL:
+    - IMMEDIATE
+    ROR:
+    - IMMEDIATE
+  branch_relative_only:
+    BCC:
+    - ABSOLUTE
+    - ZEROPAGE
+    BCS:
+    - ABSOLUTE
+    - ZEROPAGE
+    BEQ:
+    - ABSOLUTE
+    - ZEROPAGE
+    BMI:
+    - ABSOLUTE
+    - ZEROPAGE
+    BNE:
+    - ABSOLUTE
+    - ZEROPAGE
+    BPL:
+    - ABSOLUTE
+    - ZEROPAGE
+    BVC:
+    - ABSOLUTE
+    - ZEROPAGE
+    BVS:
+    - ABSOLUTE
+    - ZEROPAGE
+    BRA:
+    - ABSOLUTE
+    - ZEROPAGE
+  register_warnings:
+    LDX:
+    - Y
+    STX:
+    - Y
+    TAX:
+    - Y
+    TXA:
+    - Y
+    INX:
+    - Y
+    DEX:
+    - Y
+    LDY:
+    - X
+    STY:
+    - X
+    TAY:
+    - X
+    TYA:
+    - X
+    INY:
+    - X
+    DEY:
+    - X
+  optimization_hints:
+    zeropage_optimization:
+      mnemonics:
+      - LDA
+      - LDX
+      - LDY
+      - STA
+      - STX
+      - STY
+      - ADC
+      - SBC
+      - CMP
+      - AND
+      - ORA
+      - EOR
+      threshold: 255
+      message: Using absolute addressing for zero-page value ${value:02X}. Consider using zero-page addressing for better
+        performance.
+    immediate_range_check:
+      max_value: 255
+      message: Immediate value ${value:04X} is too large for 8-bit immediate. Maximum is $FF.
+    jmp_indirect_warning:
+      condition: value & 0xFF == 0xFF
+      message: JMP (${value:04X}) uses page boundary crossing which may be slower on some 6502 variants.

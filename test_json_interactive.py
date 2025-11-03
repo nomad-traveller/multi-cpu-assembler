@@ -149,26 +149,26 @@ def interactive_menu():
     """Interactive menu for testing CPU profiles."""
     cpu_profiles_dir = os.path.join(os.path.dirname(__file__), 'compiler', 'cpu_profiles')
     
-    # Find all JSON files
-    json_files = []
+    # Find all JSON and YAML files
+    profile_files = []
     for file in os.listdir(cpu_profiles_dir):
-        if file.endswith('.json'):
-            json_files.append(os.path.join(cpu_profiles_dir, file))
+        if file.endswith(('.json', '.yaml', '.yml')):
+            profile_files.append(os.path.join(cpu_profiles_dir, file))
     
-    if not json_files:
-        print("❌ No JSON CPU profile files found!")
+    if not profile_files:
+        print("❌ No CPU profile files found!")
         return
     
     print("🎯 Available CPU Profiles:")
-    for i, file_path in enumerate(json_files, 1):
+    for i, file_path in enumerate(profile_files, 1):
         print(f"   {i}. {os.path.basename(file_path)}")
     
-    print(f"   {len(json_files) + 1}. Test all profiles")
+    print(f"   {len(profile_files) + 1}. Test all profiles")
     print("   0. Exit")
     
     while True:
         try:
-            choice = input(f"\nSelect profile to test (0-{len(json_files) + 1}): ").strip()
+            choice = input(f"\nSelect profile to test (0-{len(profile_files) + 1}): ").strip()
             
             if choice == '0':
                 print("👋 Goodbye!")
@@ -176,18 +176,18 @@ def interactive_menu():
             
             choice_num = int(choice)
             
-            if 1 <= choice_num <= len(json_files):
-                selected_file = json_files[choice_num - 1]
+            if 1 <= choice_num <= len(profile_files):
+                selected_file = profile_files[choice_num - 1]
                 test_cpu_profile_interactive(selected_file)
             
-            elif choice_num == len(json_files) + 1:
+            elif choice_num == len(profile_files) + 1:
                 print("\n🔄 Testing all profiles...")
-                for file_path in json_files:
+                for file_path in profile_files:
                     print(f"\n{'='*60}")
                     test_cpu_profile_interactive(file_path)
             
             else:
-                print(f"❌ Invalid choice. Please enter 0-{len(json_files) + 1}")
+                print(f"❌ Invalid choice. Please enter 0-{len(profile_files) + 1}")
                 
         except ValueError:
             print("❌ Please enter a valid number.")

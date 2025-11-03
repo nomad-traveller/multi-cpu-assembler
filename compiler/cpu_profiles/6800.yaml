@@ -1,0 +1,557 @@
+# 6800.yaml
+# Multi-CPU Assembler CPU Profile - YAML Format
+# Generated from 6800.json
+
+cpu_info:
+  name: '6800'
+  description: Motorola 6800 8-bit microprocessor
+  data_width: 8
+  address_width: 16
+  endianness: big
+addressing_modes:
+  INHERENT: 0
+  ACCUMULATOR_A: 1
+  ACCUMULATOR_B: 2
+  IMMEDIATE: 3
+  DIRECT: 4
+  EXTENDED: 5
+  INDEXED: 6
+  RELATIVE: 7
+addressing_mode_patterns:
+- pattern: ^(ABA|CBA|SBA|CLR|INX|DEX|INX|NOP|RTS|RTI|TAP|TPA|TSX|TXS)$
+  mode: INHERENT
+  group_index: null
+  flags:
+  - IGNORECASE
+- pattern: ^[aA]$
+  mode: ACCUMULATOR_A
+  group_index: null
+- pattern: ^[bB]$
+  mode: ACCUMULATOR_B
+  group_index: null
+- pattern: ^#
+  mode: IMMEDIATE
+  group_index: null
+- pattern: ^(.+),X$
+  mode: INDEXED
+  group_index: 1
+  flags:
+  - IGNORECASE
+- pattern: ^\$[0-9A-F]{1,2}$
+  mode: DIRECT
+  group_index: 0
+- pattern: ^\$[0-9A-F]{3,4}$
+  mode: EXTENDED
+  group_index: 0
+- pattern: ^[0-9]{1,3}$
+  mode: DIRECT
+  group_index: 0
+- pattern: ^[0-9]{4,5}$
+  mode: EXTENDED
+  group_index: 0
+- pattern: ^(?!ABA|CBA|SBA|CLR|INX|DEX|INX|NOP|RTS|RTI|TAP|TPA|TSX|TXS$)[A-Z_][A-Z0-9_]*$
+  mode: EXTENDED
+  group_index: 0
+  flags:
+  - IGNORECASE
+branch_mnemonics:
+- BCC
+- BCS
+- BEQ
+- BGE
+- BGT
+- BHI
+- BLE
+- BLS
+- BLT
+- BMI
+- BNE
+- BPL
+- BRA
+- BSR
+- BVC
+- BVS
+opcodes:
+  LDAA:
+    IMMEDIATE:
+    - '0x86'
+    - 1
+    - {}
+    - NZV
+    DIRECT:
+    - '0x96'
+    - 1
+    - {}
+    - NZV
+    EXTENDED:
+    - '0xb6'
+    - 2
+    - {}
+    - NZV
+    INDEXED:
+    - '0xa6'
+    - 1
+    - {}
+    - NZV
+  LDAB:
+    IMMEDIATE:
+    - '0xc6'
+    - 1
+    - {}
+    - NZV
+    DIRECT:
+    - '0xd6'
+    - 1
+    - {}
+    - NZV
+    EXTENDED:
+    - '0xf6'
+    - 2
+    - {}
+    - NZV
+    INDEXED:
+    - '0xe6'
+    - 1
+    - {}
+    - NZV
+  STAA:
+    DIRECT:
+    - '0x97'
+    - 1
+    - {}
+    - NZV
+    EXTENDED:
+    - '0xb7'
+    - 2
+    - {}
+    - NZV
+    INDEXED:
+    - '0xa7'
+    - 1
+    - {}
+    - NZV
+  STAB:
+    DIRECT:
+    - '0xd7'
+    - 1
+    - {}
+    - NZV
+    EXTENDED:
+    - '0xf7'
+    - 2
+    - {}
+    - NZV
+    INDEXED:
+    - '0xe7'
+    - 1
+    - {}
+    - NZV
+  ADDA:
+    IMMEDIATE:
+    - '0x87'
+    - 1
+    - {}
+    - NZVC
+    DIRECT:
+    - '0x97'
+    - 1
+    - {}
+    - NZVC
+    EXTENDED:
+    - '0xb7'
+    - 2
+    - {}
+    - NZVC
+    INDEXED:
+    - '0xa7'
+    - 1
+    - {}
+    - NZVC
+  ADDB:
+    IMMEDIATE:
+    - '0xc7'
+    - 1
+    - {}
+    - NZVC
+    DIRECT:
+    - '0xd7'
+    - 1
+    - {}
+    - NZVC
+    EXTENDED:
+    - '0xf7'
+    - 2
+    - {}
+    - NZVC
+    INDEXED:
+    - '0xe7'
+    - 1
+    - {}
+    - NZVC
+  SUBA:
+    IMMEDIATE:
+    - '0x88'
+    - 1
+    - {}
+    - NZVC
+    DIRECT:
+    - '0x98'
+    - 1
+    - {}
+    - NZVC
+    EXTENDED:
+    - '0xb8'
+    - 2
+    - {}
+    - NZVC
+    INDEXED:
+    - '0xa8'
+    - 1
+    - {}
+    - NZVC
+  SUBB:
+    IMMEDIATE:
+    - '0xc8'
+    - 1
+    - {}
+    - NZVC
+    DIRECT:
+    - '0xd8'
+    - 1
+    - {}
+    - NZVC
+    EXTENDED:
+    - '0xf8'
+    - 2
+    - {}
+    - NZVC
+    INDEXED:
+    - '0xe8'
+    - 1
+    - {}
+    - NZVC
+  CMPA:
+    IMMEDIATE:
+    - '0x89'
+    - 1
+    - {}
+    - NZVC
+    DIRECT:
+    - '0x99'
+    - 1
+    - {}
+    - NZVC
+    EXTENDED:
+    - '0xb9'
+    - 2
+    - {}
+    - NZVC
+    INDEXED:
+    - '0xa9'
+    - 1
+    - {}
+    - NZVC
+  CMPB:
+    IMMEDIATE:
+    - '0xc9'
+    - 1
+    - {}
+    - NZVC
+    DIRECT:
+    - '0xd9'
+    - 1
+    - {}
+    - NZVC
+    EXTENDED:
+    - '0xf9'
+    - 2
+    - {}
+    - NZVC
+    INDEXED:
+    - '0xe9'
+    - 1
+    - {}
+    - NZVC
+  JMP:
+    EXTENDED:
+    - '0x7e'
+    - 2
+    - {}
+    - ''
+    INDEXED:
+    - '0x6e'
+    - 1
+    - {}
+    - ''
+  JSR:
+    EXTENDED:
+    - '0xbd'
+    - 2
+    - {}
+    - ''
+    INDEXED:
+    - '0xad'
+    - 1
+    - {}
+    - ''
+  BRA:
+    RELATIVE:
+    - '0x20'
+    - 1
+    - {}
+    - ''
+  BNE:
+    RELATIVE:
+    - '0x26'
+    - 1
+    - {}
+    - ''
+  BEQ:
+    RELATIVE:
+    - '0x27'
+    - 1
+    - {}
+    - ''
+  BCC:
+    RELATIVE:
+    - '0x24'
+    - 1
+    - {}
+    - ''
+  BCS:
+    RELATIVE:
+    - '0x25'
+    - 1
+    - {}
+    - ''
+  BMI:
+    RELATIVE:
+    - '0x2b'
+    - 1
+    - {}
+    - ''
+  BPL:
+    RELATIVE:
+    - '0x2a'
+    - 1
+    - {}
+    - ''
+  BVC:
+    RELATIVE:
+    - '0x28'
+    - 1
+    - {}
+    - ''
+  BVS:
+    RELATIVE:
+    - '0x29'
+    - 1
+    - {}
+    - ''
+  LDX:
+    IMMEDIATE:
+    - '0xce'
+    - 2
+    - {}
+    - NZV
+    DIRECT:
+    - '0xde'
+    - 1
+    - {}
+    - NZV
+    EXTENDED:
+    - '0xfe'
+    - 2
+    - {}
+    - NZV
+    INDEXED:
+    - '0xee'
+    - 1
+    - {}
+    - NZV
+  DEX:
+    INHERENT:
+    - '0x9'
+    - 0
+    - {}
+    - Z
+  CLR:
+    EXTENDED:
+    - '0x7f'
+    - 2
+    - {}
+    - NZVC
+    INDEXED:
+    - '0x6f'
+    - 1
+    - {}
+    - NZVC
+  INX:
+    INHERENT:
+    - '0x8'
+    - 0
+    - {}
+    - Z
+  NOP:
+    INHERENT:
+    - '0x1'
+    - 0
+    - {}
+    - ''
+  RTS:
+    INHERENT:
+    - '0x39'
+    - 0
+    - {}
+    - ''
+directives:
+  .ORG:
+    description: Set origin address
+    operand_count: 1
+    operand_type: expression
+  .BYTE:
+    description: Define byte data
+    operand_count: variable
+    operand_type: expression_list
+    size_multiplier: 1
+  .WORD:
+    description: Define word data
+    operand_count: variable
+    operand_type: expression_list
+    size_multiplier: 2
+  EQU:
+    description: Equate symbol to value
+    operand_count: 1
+    operand_type: expression
+    size: 0
+post_processing:
+  branch_instructions:
+    mnemonics:
+    - BCC
+    - BCS
+    - BEQ
+    - BGE
+    - BGT
+    - BHI
+    - BLE
+    - BLS
+    - BLT
+    - BMI
+    - BNE
+    - BPL
+    - BRA
+    - BSR
+    - BVC
+    - BVS
+    force_mode: RELATIVE
+  automatic_mode_conversion:
+  - from_mode: EXTENDED
+    to_mode: DIRECT
+    threshold: 255
+    condition: mode == EXTENDED and DIRECT in opcodes[mnemonic]
+validation_rules:
+  inherent_only:
+    ABA:
+    - INHERENT
+    CBA:
+    - INHERENT
+    SBA:
+    - INHERENT
+  branch_valid_modes:
+    BCC:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BCS:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BEQ:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BGE:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BGT:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BHI:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BLE:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BLS:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BLT:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BMI:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BNE:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BPL:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BRA:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BSR:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BVC:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+    BVS:
+    - RELATIVE
+    - DIRECT
+    - EXTENDED
+  inherent_warnings:
+    TAP:
+    - INHERENT
+    TPA:
+    - INHERENT
+    TSX:
+    - INHERENT
+    TXS:
+    - INHERENT
+    RTS:
+    - INHERENT
+    RTI:
+    - INHERENT
+  optimization_hints:
+    direct_page_optimization:
+      mnemonics:
+      - LDAA
+      - LDAB
+      - STAA
+      - LDX
+      - CLR
+      threshold: 255
+      message: Using extended addressing for direct-page value ${value:02X}. Consider using direct addressing for better performance.
+    immediate_range_check:
+      max_value: 255
+      message: Immediate value ${value:04X} is too large for 8-bit immediate in instruction '{mnemonic}'.
+      exceptions:
+      - LDX
+      - STX
+      - CPX
+      - LDS
+      - STS
+      - CPS

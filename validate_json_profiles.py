@@ -15,8 +15,14 @@ except ImportError:
     json5 = None
     print("⚠️  Warning: json5 not available, falling back to JSON parser")
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+    print("⚠️  Warning: PyYAML not available, YAML validation disabled")
+
 def validate_cpu_profile(file_path: str) -> Dict[str, Any]:
-    """Validate a CPU profile JSON file and return results."""
+    """Validate a CPU profile JSON/YAML file and return results."""
     result = {
         'valid': False,
         'errors': [],
@@ -25,16 +31,31 @@ def validate_cpu_profile(file_path: str) -> Dict[str, Any]:
     }
     
     try:
+        file_ext = os.path.splitext(file_path)[1].lower()
+        
         with open(file_path, 'r') as f:
-            if json5 is not None:
-                data = json5.load(f)
+            if file_ext in ['.yaml', '.yml']:
+                if yaml is not None:
+                    data = yaml.safe_load(f)
+                else:
+                    result['errors'].append("PyYAML is required for YAML validation")
+                    return result
+            elif file_ext == '.json':
+                if json5 is not None:
+                    data = json5.load(f)
+                else:
+                    data = json.load(f)
             else:
-                data = json.load(f)
+                # Default to JSON5 for unknown extensions
+                if json5 is not None:
+                    data = json5.load(f)
+                else:
+                    data = json.load(f)
     except FileNotFoundError:
         result['errors'].append("File not found")
         return result
     except Exception as e:
-        result['errors'].append(f"JSON5/JSON syntax error: {e}")
+        result['errors'].append(f"Profile syntax error: {e}")
         return result
     
     # Basic structure validation
@@ -216,23 +237,23 @@ def print_validation_result(file_path: str, result: Dict[str, Any]):
 def main():
     """Main validation script."""
     if len(sys.argv) < 2:
-        print("Usage: python validate_json_profiles.py <json_file> [json_file2 ...]")
-        print("   Or: python validate_json_profiles.py --all (validates all JSON files in cpu_profiles/)")
+        print("Usage: python validate_json_profiles.py <profile_file> [profile_file2 ...]")
+        print("   Or: python validate_json_profiles.py --all (validates all JSON/YAML files in cpu_profiles/)")
         sys.exit(1)
     
     files_to_validate = []
     
     if sys.argv[1] == "--all":
-        # Validate all JSON files in cpu_profiles directory
+        # Validate all JSON and YAML files in cpu_profiles directory
         cpu_profiles_dir = os.path.join(os.path.dirname(__file__), 'compiler', 'cpu_profiles')
         for file in os.listdir(cpu_profiles_dir):
-            if file.endswith('.json'):
+            if file.endswith(('.json', '.yaml', '.yml')):
                 files_to_validate.append(os.path.join(cpu_profiles_dir, file))
     else:
         # Validate specified files
         files_to_validate = sys.argv[1:]
     
-    print("🔍 JSON CPU Profile Validation")
+    print("🔍 CPU Profile Validation (JSON/YAML)")
     print("=" * 60)
     
     all_valid = True
@@ -247,10 +268,10 @@ def main():
     
     print("=" * 60)
     if all_valid:
-        print("✅ All JSON files are valid!")
+        print("✅ All profile files are valid!")
         sys.exit(0)
     else:
-        print("❌ Some JSON files have errors!")
+        print("❌ Some profile files have errors!")
         sys.exit(1)
 
 if __name__ == '__main__':
