@@ -33,11 +33,27 @@ class CPUProfileFactory:
         if not os.path.exists(self.profiles_dir):
             return
         
-        for file in os.listdir(self.profiles_dir):
+        # Get all files and sort to prioritize YAML over JSON
+        files = os.listdir(self.profiles_dir)
+        # Sort: YAML files first, then JSON files
+        files.sort(key=lambda x: (0 if x.endswith(('.yaml', '.yml')) else 1, x))
+        
+        for file in files:
+            cpu_name = None
             if file.endswith('.json'):
-                cpu_name = file[:-5]  # Remove .json extension
+                cpu_name = file[:-5]
+            elif file.endswith('.yaml'):
+                cpu_name = file[:-5]
+            elif file.endswith('.yml'):
+                cpu_name = file[:-4]
+            
+            if cpu_name:
+                # Skip if already loaded (YAML takes precedence over JSON)
+                if cpu_name in self._profile_cache:
+                    continue
+                
                 self._profile_cache[cpu_name] = {
-                    'json_file': os.path.join(self.profiles_dir, file),
+                    'file': os.path.join(self.profiles_dir, file),
                     'class': None
                 }
     
@@ -54,9 +70,9 @@ class CPUProfileFactory:
         
         # No special handling needed - all profiles use generic ConfigCPUProfile
         
-        # Generic JSON profile loading
+        # Generic profile loading
         profile_info = self._profile_cache[cpu_name]
-        json_file = profile_info['json_file']
+        profile_file = profile_info['file']
         
         # Try to load a custom profile class if it exists
         class_file = os.path.join(self.profiles_dir, f"json_{cpu_name}_profile.py")
@@ -71,9 +87,9 @@ class CPUProfileFactory:
             except (ImportError, AttributeError):
                 pass
         
-        # Fall back to generic JSON profile
+        # Fall back to generic profile
         from cpu_profile_base import ConfigCPUProfile
-        return ConfigCPUProfile(diagnostics, json_file)
+        return ConfigCPUProfile(diagnostics, profile_file)
 
 # Initialize the profile factory
 profile_factory = CPUProfileFactory()

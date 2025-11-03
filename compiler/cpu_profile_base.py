@@ -29,6 +29,7 @@ class ConfigCPUProfile:
     
     def __init__(self, diagnostics, profile_file_path: str):
         self.diagnostics = diagnostics
+        self._profile_file_path = profile_file_path
         self._load_profile(profile_file_path)
         self._create_addressing_mode_enum()
     
@@ -380,7 +381,7 @@ class ConfigCPUProfile:
         return None
     
     def validate_instruction(self, instruction) -> bool:
-        """Validate instruction using JSON rules."""
+        """Validate instruction using generic rule engine."""
         mnemonic = instruction.mnemonic.upper() if instruction.mnemonic else ""
         mode = instruction.mode
         operand_value = instruction.operand_value
@@ -391,22 +392,132 @@ class ConfigCPUProfile:
         if not mode_name:
             return True
         
+        # Get validation rules - support both old and new formats
+        validation_rules = self.validation_rules
+        
+        
+        
+        # Check if using new generic rule format
+        if isinstance(validation_rules, list):
+            return self._validate_with_generic_rules(instruction, mnemonic, mode_name, operand_value)
+        else:
+            # Legacy format - convert to generic rules and validate
+            return self._validate_with_legacy_rules(instruction, mnemonic, mode_name, operand_value)
+    
+    def _validate_with_generic_rules(self, instruction, mnemonic: str, mode_name: str, operand_value) -> bool:
+        """Validate using the new generic rule format."""
+        validation_rules = self.validation_rules
+        
+        for rule in validation_rules:
+            rule_type = rule.get("type")
+            if not rule_type:
+                continue
+                
+            # Check if this rule applies to this mnemonic
+            mnemonics = rule.get("mnemonics", [])
+            if mnemonics and mnemonic not in mnemonics:
+                continue
+            
+            # Execute the rule based on its type
+            if not self._execute_validation_rule(rule, rule_type, instruction, mnemonic, mode_name, operand_value):
+                return False  # Error occurred, stop validation
+        
+        return True
+    
+    def _execute_validation_rule(self, rule: dict, rule_type: str, instruction, mnemonic: str, mode_name: str, operand_value) -> bool:
+        """Execute a single validation rule."""
+        message = rule.get("message", "")
+        
+        if rule_type == "error_if_mode_is":
+            modes = rule.get("modes", [])
+            if mode_name in modes:
+                formatted_msg = message.format(mnemonic=mnemonic, mode=mode_name)
+                self.diagnostics.error(instruction.line_num, formatted_msg)
+                return False
+                
+        elif rule_type == "error_if_mode_is_not":
+            modes = rule.get("modes", [])
+            if mode_name not in modes:
+                formatted_msg = message.format(mnemonic=mnemonic, mode=mode_name, valid_modes=", ".join(modes))
+                self.diagnostics.error(instruction.line_num, formatted_msg)
+                return False
+                
+        elif rule_type == "warning_if_mode_is":
+            modes = rule.get("modes", [])
+            if mode_name in modes:
+                formatted_msg = message.format(mnemonic=mnemonic, mode=mode_name)
+                self.diagnostics.warning(instruction.line_num, formatted_msg)
+                
+        elif rule_type == "warning_if_mode_is_not":
+            modes = rule.get("modes", [])
+            if mode_name not in modes:
+                formatted_msg = message.format(mnemonic=mnemonic, mode=mode_name, valid_modes=", ".join(modes))
+                self.diagnostics.warning(instruction.line_num, formatted_msg)
+                
+        elif rule_type == "error_if_operand_out_of_range":
+            if isinstance(operand_value, int):
+                # Check for exceptions
+                exceptions = rule.get("exceptions", [])
+                if mnemonic in exceptions:
+                    return True  # Skip this rule for exception mnemonics
+                    
+                min_val = rule.get("min_value", 0)
+                max_val = rule.get("max_value", 255)
+                if not (min_val <= operand_value <= max_val):
+                    formatted_msg = message.format(mnemonic=mnemonic, value=operand_value, min_value=min_val, max_value=max_val)
+                    self.diagnostics.error(instruction.line_num, formatted_msg)
+                    return False
+                    
+        elif rule_type == "warning_if_operand_out_of_range":
+            if isinstance(operand_value, int):
+                # Check for exceptions
+                exceptions = rule.get("exceptions", [])
+                if mnemonic in exceptions:
+                    return True  # Skip this rule for exception mnemonics
+                    
+                min_val = rule.get("min_value", 0)
+                max_val = rule.get("max_value", 255)
+                if not (min_val <= operand_value <= max_val):
+                    formatted_msg = message.format(mnemonic=mnemonic, value=operand_value, min_value=min_val, max_value=max_val)
+                    self.diagnostics.warning(instruction.line_num, formatted_msg)
+                    
+        elif rule_type == "error_if_register_used":
+            # For register-specific validation (e.g., Y register warnings)
+            register = rule.get("register", "")
+            if hasattr(operand_value, 'register') and operand_value.register == register:
+                formatted_msg = message.format(mnemonic=mnemonic, register=register)
+                self.diagnostics.error(instruction.line_num, formatted_msg)
+                return False
+                
+        elif rule_type == "warning_if_register_used":
+            # For register-specific validation (e.g., Y register warnings)
+            register = rule.get("register", "")
+            if hasattr(operand_value, 'register') and operand_value.register == register:
+                formatted_msg = message.format(mnemonic=mnemonic, register=register)
+                self.diagnostics.warning(instruction.line_num, formatted_msg)
+        
+        return True
+    
+    def _validate_with_legacy_rules(self, instruction, mnemonic: str, mode_name: str, operand_value) -> bool:
+        """Validate using the legacy rule format (for backward compatibility)."""
+        validation_rules = self.validation_rules
+        
         # Check accumulator-only instructions
-        accumulator_only = self.validation_rules.get("accumulator_only", {})
+        accumulator_only = validation_rules.get("accumulator_only", {})
         if mnemonic in accumulator_only and mode_name in accumulator_only[mnemonic]:
             self.diagnostics.error(instruction.line_num,
                 f"Instruction '{mnemonic}' must use inherent addressing (no operands).")
             return False
         
         # Check inherent-only instructions
-        inherent_only = self.validation_rules.get("inherent_only", {})
+        inherent_only = validation_rules.get("inherent_only", {})
         if mnemonic in inherent_only and mode_name not in inherent_only[mnemonic]:
             self.diagnostics.error(instruction.line_num,
                 f"Instruction '{mnemonic}' must use inherent addressing (no operands).")
             return False
         
         # Check branch instruction valid modes
-        branch_valid_modes = self.validation_rules.get("branch_valid_modes", {})
+        branch_valid_modes = validation_rules.get("branch_valid_modes", {})
         if mnemonic in branch_valid_modes and mode_name not in branch_valid_modes[mnemonic]:
             valid_modes = ", ".join(branch_valid_modes[mnemonic])
             self.diagnostics.error(instruction.line_num,
@@ -414,13 +525,13 @@ class ConfigCPUProfile:
             return False
         
         # Check inherent warnings
-        inherent_warnings = self.validation_rules.get("inherent_warnings", {})
+        inherent_warnings = validation_rules.get("inherent_warnings", {})
         if mnemonic in inherent_warnings and mode_name not in inherent_warnings[mnemonic]:
             self.diagnostics.warning(instruction.line_num,
                 f"Instruction '{mnemonic}' typically uses inherent addressing. Operands may be ignored.")
         
         # Check optimization hints
-        optimization = self.validation_rules.get("optimization_hints", {})
+        optimization = validation_rules.get("optimization_hints", {})
         
         # Direct page optimization (6800 equivalent of zeropage)
         if "direct_page_optimization" in optimization:

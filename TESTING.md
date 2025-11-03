@@ -410,8 +410,96 @@ time . compiler/.venv/bin/activate && python -m unittest discover -s tests -p "t
 python -m cProfile validate_json_profiles.py --all
 ```
 
+## Validation Engine Testing
+
+The generic validation engine is tested through the main test suite and can be validated independently:
+
+### Validation Rule Types Testing
+
+The validation engine supports these rule types (all tested in end-to-end tests):
+
+1. **Mode-based Validation:**
+   - `error_if_mode_is` - Tests accumulator-only instructions
+   - `error_if_mode_is_not` - Tests inherent-only instructions  
+   - `warning_if_mode_is` - Tests optimization hints
+   - `warning_if_mode_is_not` - Tests typical usage patterns
+
+2. **Operand Range Validation:**
+   - `error_if_operand_out_of_range` - Tests immediate value limits
+   - `warning_if_operand_out_of_range` - Tests optimization opportunities
+
+3. **Register-specific Validation:**
+   - `error_if_register_used` - Tests register conflicts
+   - `warning_if_register_used` - Tests register usage warnings
+
+### Testing Validation Rules
+
+Create test files to trigger validation:
+
+```bash
+# Test 65C02 validation
+cat > test_validation.s << 'EOF'
+    .ORG $8000
+    LDA $0050   ; Should warn about zero-page optimization
+    RTS
+EOF
+
+python compiler/main.py test_validation.s -o output.bin --cpu 65c02
+# Expected: Warning about using absolute addressing for zero-page value
+
+# Test 6800 validation  
+cat > test_validation.s << 'EOF'
+    .ORG $8000
+    LDAA $0050  ; Should warn about direct-page optimization
+    RTS
+EOF
+
+python compiler/main.py test_validation.s -o output.bin --cpu 6800
+# Expected: Warning about using extended addressing for direct-page value
+```
+
+### Validation Rule Examples
+
+**65C02 Validation Rules:**
+```yaml
+validation_rules:
+  - type: "warning_if_mode_is"
+    mnemonics: ["LDA", "STA", "LDX", "STX"]
+    modes: ["ABSOLUTE"]
+    message: "Instruction {mnemonic} uses absolute addressing. Consider using zero-page addressing for values under $0100."
+```
+
+**6800 Validation Rules:**
+```yaml
+validation_rules:
+  - type: "error_if_mode_is_not"
+    mnemonics: ["ABA", "CBA", "SBA"]
+    modes: ["INHERENT"]
+    message: "Instruction {mnemonic} must use INHERENT addressing (no operands)."
+```
+
+### Backward Compatibility
+
+The validation engine maintains backward compatibility with legacy validation format:
+
+```yaml
+# Legacy format (still supported)
+validation_rules:
+  accumulator_only:
+    ASL: ["IMMEDIATE"]
+  branch_valid_modes:
+    BCC: ["RELATIVE", "DIRECT", "EXTENDED"]
+
+# New generic format (recommended)
+validation_rules:
+  - type: "error_if_mode_is"
+    mnemonics: ["ASL"]
+    modes: ["IMMEDIATE"]
+    message: "Instruction {mnemonic} cannot use IMMEDIATE addressing."
+```
+
 ## Conclusion
 
-The testing suite provides comprehensive coverage of the assembler's functionality, with special emphasis on the JSON5/YAML-based CPU profile system. All tools are designed for independent operation and can be used without running the main assembler.
+The testing suite provides comprehensive coverage of the assembler's functionality, with special emphasis on the JSON5/YAML-based CPU profile system and the new generic validation engine. All tools are designed for independent operation and can be used without running the main assembler.
 
-**Status**: ✅ All tests passing, JSON validation complete
+**Status**: ✅ All tests passing, JSON validation complete, generic validation engine operational

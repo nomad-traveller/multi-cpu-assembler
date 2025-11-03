@@ -3,7 +3,7 @@
 # Generated from 6800.json
 
 cpu_info:
-  name: 6800
+  name: '6800'
   description: Motorola 6800 8-bit microprocessor
   data_width: 8
   address_width: 16
@@ -455,108 +455,33 @@ post_processing:
     threshold: 255
     condition: mode == EXTENDED and DIRECT in opcodes[mnemonic]
 validation_rules:
-  inherent_only:
-    ABA:
-    - INHERENT
-    CBA:
-    - INHERENT
-    SBA:
-    - INHERENT
-  branch_valid_modes:
-    BCC:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BCS:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BEQ:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BGE:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BGT:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BHI:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BLE:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BLS:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BLT:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BMI:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BNE:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BPL:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BRA:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BSR:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BVC:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-    BVS:
-    - RELATIVE
-    - DIRECT
-    - EXTENDED
-  inherent_warnings:
-    TAP:
-    - INHERENT
-    TPA:
-    - INHERENT
-    TSX:
-    - INHERENT
-    TXS:
-    - INHERENT
-    RTS:
-    - INHERENT
-    RTI:
-    - INHERENT
-  optimization_hints:
-    direct_page_optimization:
-      mnemonics:
-      - LDAA
-      - LDAB
-      - STAA
-      - LDX
-      - CLR
-      threshold: 255
-      message: Using extended addressing for direct-page value ${value:02X}. Consider using direct addressing for better performance.
-    immediate_range_check:
-      max_value: 255
-      message: Immediate value ${value:04X} is too large for 8-bit immediate in instruction '{mnemonic}'.
-      exceptions:
-      - LDX
-      - STX
-      - CPX
-      - LDS
-      - STS
-      - CPS
+  # Inherent-only instructions must use INHERENT addressing
+  - type: "error_if_mode_is_not"
+    mnemonics: ["ABA", "CBA", "SBA"]
+    modes: ["INHERENT"]
+    message: "Instruction {mnemonic} must use INHERENT addressing (no operands)."
+  
+  # Branch instructions can use RELATIVE, DIRECT, or EXTENDED addressing
+  - type: "error_if_mode_is_not"
+    mnemonics: ["BCC", "BCS", "BEQ", "BGE", "BGT", "BHI", "BLE", "BLS", "BLT", "BMI", "BNE", "BPL", "BRA", "BSR", "BVC", "BVS"]
+    modes: ["RELATIVE", "DIRECT", "EXTENDED"]
+    message: "Branch instruction {mnemonic} requires RELATIVE, DIRECT, or EXTENDED addressing."
+  
+  # Inherent warnings for instructions that typically don't use operands
+  - type: "warning_if_mode_is_not"
+    mnemonics: ["TAP", "TPA", "TSX", "TXS", "RTS", "RTI"]
+    modes: ["INHERENT"]
+    message: "Instruction {mnemonic} typically uses INHERENT addressing. Operands may be ignored."
+  
+  # Direct page optimization hint (6800 equivalent of zeropage)
+  - type: "warning_if_mode_is"
+    mnemonics: ["LDAA", "LDAB", "STAA", "LDX", "CLR"]
+    modes: ["EXTENDED"]
+    message: "Instruction {mnemonic} uses extended addressing. Consider using direct addressing for values under $0100."
+  
+  # Immediate range check with exceptions for 16-bit instructions
+  - type: "error_if_operand_out_of_range"
+    min_value: 0
+    max_value: 255
+    message: "Immediate value ${value:04X} is too large for 8-bit immediate in instruction '{mnemonic}'."
+    exceptions: ["LDX", "STX", "CPX", "LDS", "STS", "CPS"]

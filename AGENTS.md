@@ -8,6 +8,7 @@
 - Run single test method: `source compiler/.venv/bin/activate && python -m unittest tests.test_json_cpu_profiles.TestConfigCPUProfile.test_load_65c02_profile`
 - Validate CPU profiles: `source compiler/.venv/bin/activate && python validate_json_profiles.py --all`
 - Interactive testing: `source compiler/.venv/bin/activate && python test_json_interactive.py`
+- Test validation engine: Create test files with specific addressing patterns to trigger validation rules
 
 ### Building/Running
 - Main assembler: `source compiler/.venv/bin/activate && python compiler/main.py source_file.s -o output.bin --cpu 65c02`
@@ -74,3 +75,51 @@
 - Mock external dependencies with `unittest.mock`
 - Test both success and failure cases
 - Capture stdout/stderr for validation when needed
+
+## Validation Engine Development
+
+### Generic Validation Rules
+The assembler uses a generic validation engine that executes rules defined in YAML files. When adding new validation:
+
+- **Use Generic Rule Types**: Prefer existing rule types (`error_if_mode_is`, `warning_if_mode_is`, etc.)
+- **No CPU-Specific Code**: Validation logic should be in YAML, not Python
+- **Backward Compatibility**: Legacy validation format is still supported
+- **Message Templates**: Use `{mnemonic}`, `{mode}`, `{value}` placeholders in messages
+
+### Supported Validation Rule Types
+- `error_if_mode_is` - Error if instruction uses specific addressing modes
+- `error_if_mode_is_not` - Error if instruction doesn't use specific addressing modes
+- `warning_if_mode_is` - Warning if instruction uses specific addressing modes  
+- `warning_if_mode_is_not` - Warning if instruction doesn't use specific addressing modes
+- `error_if_operand_out_of_range` - Error if operand value is outside valid range
+- `warning_if_operand_out_of_range` - Warning if operand value is outside optimal range
+- `error_if_register_used` / `warning_if_register_used` - Register-specific validation
+
+### Adding New Validation Rule Types
+If new validation types are needed:
+1. Add rule type to `_execute_validation_rule()` in `cpu_profile_base.py`
+2. Handle rule parameters and message formatting
+3. Update documentation in README.md and TESTING.md
+4. Add test cases to verify new rule type
+
+### Validation Rule Examples
+```yaml
+# Error for accumulator-only instructions using immediate addressing
+- type: "error_if_mode_is"
+  mnemonics: ["ASL", "LSR", "ROL", "ROR"]
+  modes: ["IMMEDIATE"]
+  message: "Instruction {mnemonic} cannot use IMMEDIATE addressing with accumulator."
+
+# Warning for optimization opportunities
+- type: "warning_if_mode_is"
+  mnemonics: ["LDA", "STA"]
+  modes: ["ABSOLUTE"]
+  message: "Instruction {mnemonic} uses absolute addressing. Consider using zero-page addressing for values under $0100."
+
+# Range validation with exceptions
+- type: "error_if_operand_out_of_range"
+  min_value: 0
+  max_value: 255
+  message: "Immediate value ${value:04X} is too large for 8-bit immediate."
+  exceptions: ["LDX", "STX"]  # 16-bit instructions
+```

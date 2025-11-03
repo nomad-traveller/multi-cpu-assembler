@@ -1156,89 +1156,37 @@ post_processing:
     to_mode: ZEROPAGE_Y
     threshold: 255
 validation_rules:
-  accumulator_only:
-    ASL:
-    - IMMEDIATE
-    LSR:
-    - IMMEDIATE
-    ROL:
-    - IMMEDIATE
-    ROR:
-    - IMMEDIATE
-  branch_relative_only:
-    BCC:
-    - ABSOLUTE
-    - ZEROPAGE
-    BCS:
-    - ABSOLUTE
-    - ZEROPAGE
-    BEQ:
-    - ABSOLUTE
-    - ZEROPAGE
-    BMI:
-    - ABSOLUTE
-    - ZEROPAGE
-    BNE:
-    - ABSOLUTE
-    - ZEROPAGE
-    BPL:
-    - ABSOLUTE
-    - ZEROPAGE
-    BVC:
-    - ABSOLUTE
-    - ZEROPAGE
-    BVS:
-    - ABSOLUTE
-    - ZEROPAGE
-    BRA:
-    - ABSOLUTE
-    - ZEROPAGE
-  register_warnings:
-    LDX:
-    - Y
-    STX:
-    - Y
-    TAX:
-    - Y
-    TXA:
-    - Y
-    INX:
-    - Y
-    DEX:
-    - Y
-    LDY:
-    - X
-    STY:
-    - X
-    TAY:
-    - X
-    TYA:
-    - X
-    INY:
-    - X
-    DEY:
-    - X
-  optimization_hints:
-    zeropage_optimization:
-      mnemonics:
-      - LDA
-      - LDX
-      - LDY
-      - STA
-      - STX
-      - STY
-      - ADC
-      - SBC
-      - CMP
-      - AND
-      - ORA
-      - EOR
-      threshold: 255
-      message: Using absolute addressing for zero-page value ${value:02X}. Consider using zero-page addressing for better
-        performance.
-    immediate_range_check:
-      max_value: 255
-      message: Immediate value ${value:04X} is too large for 8-bit immediate. Maximum is $FF.
-    jmp_indirect_warning:
-      condition: value & 0xFF == 0xFF
-      message: JMP (${value:04X}) uses page boundary crossing which may be slower on some 6502 variants.
+  # Accumulator-only instructions cannot use IMMEDIATE addressing
+  - type: "error_if_mode_is"
+    mnemonics: ["ASL", "LSR", "ROL", "ROR"]
+    modes: ["IMMEDIATE"]
+    message: "Instruction {mnemonic} cannot use IMMEDIATE addressing with accumulator."
+  
+  # Branch instructions should use RELATIVE addressing, not ABSOLUTE or ZEROPAGE
+  - type: "warning_if_mode_is"
+    mnemonics: ["BCC", "BCS", "BEQ", "BMI", "BNE", "BPL", "BVC", "BVS", "BRA"]
+    modes: ["ABSOLUTE", "ZEROPAGE"]
+    message: "Branch instruction {mnemonic} typically uses RELATIVE addressing. Consider using relative addressing for branches."
+  
+  # Register-specific warnings for X/Y register confusion
+  - type: "warning_if_register_used"
+    mnemonics: ["LDX", "STX", "TAX", "TXA", "INX", "DEX"]
+    register: "Y"
+    message: "Instruction {mnemonic} operates on X register, but Y register is referenced."
+  
+  - type: "warning_if_register_used"
+    mnemonics: ["LDY", "STY", "TAY", "TYA", "INY", "DEY"]
+    register: "X"
+    message: "Instruction {mnemonic} operates on Y register, but X register is referenced."
+  
+  # Zero-page optimization hint
+  - type: "warning_if_mode_is"
+    mnemonics: ["LDA", "LDX", "LDY", "STA", "STX", "STY", "ADC", "SBC", "CMP", "AND", "ORA", "EOR"]
+    modes: ["ABSOLUTE"]
+    message: "Instruction {mnemonic} uses absolute addressing. Consider using zero-page addressing for values under $0100."
+  
+  # Immediate range check
+  - type: "error_if_operand_out_of_range"
+    min_value: 0
+    max_value: 255
+    message: "Immediate value ${value:04X} is too large for 8-bit immediate. Maximum is $FF."

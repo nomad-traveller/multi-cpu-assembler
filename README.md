@@ -14,6 +14,7 @@ A modular, extensible assembler supporting multiple CPU architectures through JS
 - **Automatic Format Detection**: Seamlessly switch between JSON5 and YAML based on file extension
 - **Two-Pass Assembly**: Efficient symbol resolution and error detection
 - **Enhanced Error Reporting**: Detailed warnings and error messages for common assembly mistakes
+- **Generic Validation Engine**: Rule-based validation system that's fully CPU-agnostic
 - **Expression Evaluation**: Support for complex expressions with operators and symbols
 - **Comprehensive Testing**: Full test suite with profile validation for both formats
 - **Independent Testing**: CPU profiles can be validated without running the assembler
@@ -104,8 +105,36 @@ main.py (Entry Point)
 - **Assembler**: Performs two-pass assembly with symbol resolution
 - **JSONCPUProfile**: Loads and validates JSON5/YAML CPU profiles with automatic format detection
 - **CPU Profiles**: JSON5 or YAML files defining opcodes, addressing modes, and validation rules
+- **Generic Validation Engine**: Rule-based system that validates instructions without CPU-specific code
 - **Expression Evaluator**: Handles complex expressions and symbol resolution
 - **Diagnostics**: Centralized error and warning reporting
+
+### Generic Validation Engine
+
+The assembler features a powerful, CPU-agnostic validation engine that uses rule-based validation defined entirely in YAML files. This means:
+
+- **No Hard-coded Logic**: The Python code contains no CPU-specific validation logic
+- **Extensible Rules**: Add new validation types without modifying Python code
+- **Flexible Conditions**: Support for complex validation scenarios with exceptions
+- **Backward Compatible**: Legacy validation format still supported
+
+**Supported Validation Rule Types:**
+- `error_if_mode_is` - Error if instruction uses specific addressing modes
+- `error_if_mode_is_not` - Error if instruction doesn't use specific addressing modes  
+- `warning_if_mode_is` - Warning if instruction uses specific addressing modes
+- `warning_if_mode_is_not` - Warning if instruction doesn't use specific addressing modes
+- `error_if_operand_out_of_range` - Error if operand value is outside valid range
+- `warning_if_operand_out_of_range` - Warning if operand value is outside optimal range
+- `error_if_register_used` / `warning_if_register_used` - Register-specific validation
+
+**Example Validation Rule:**
+```yaml
+validation_rules:
+  - type: "warning_if_mode_is"
+    mnemonics: ["LDA", "STA", "LDX", "STX"]
+    modes: ["ABSOLUTE"]
+    message: "Instruction {mnemonic} uses absolute addressing. Consider using zero-page addressing for values under $0100."
+```
 
 ## Development
 
@@ -114,11 +143,12 @@ main.py (Entry Point)
 The assembler is designed for easy extension through JSON5 or YAML profiles. To add a new CPU:
 
 1. **Create Profile**: Add `new_cpu.json` or `new_cpu.yaml` in `compiler/cpu_profiles/`
-2. **Define CPU Info**: Include name, description, data width, address width
+2. **Define CPU Info**: Include name, description, data width, address width, endianness
 3. **Specify Addressing Modes**: List all addressing modes with enum values
 4. **Add Opcodes**: Define all instructions with their opcodes, cycles, and flags
-5. **Include Validation Rules**: Specify addressing patterns and directives
-6. **Validate**: Use `python validate_json_profiles.py --all` to test
+5. **Define Directives**: Specify assembler directives (EQU, .ORG, .BYTE, etc.)
+6. **Add Validation Rules**: Use generic rule-based validation system
+7. **Validate**: Use `python validate_json_profiles.py --all` to test
 
 **Example JSON5 Structure**:
 ```json
@@ -144,10 +174,12 @@ The assembler is designed for easy extension through JSON5 or YAML profiles. To 
 **Example YAML Structure**:
 ```yaml
 cpu_info:
-  name: NEW_CPU
+  name: 'NEW_CPU'
   description: New CPU Architecture
   data_width: 8
   address_width: 16
+  endianness: little
+  fill_byte: "0x00"
 
 addressing_modes:
   IMPLIED: 0
@@ -156,6 +188,18 @@ addressing_modes:
 opcodes:
   NOP:
     IMPLIED: [0x00, 0, 2, ""]
+
+directives:
+  EQU:
+    type: "symbol_define"
+  .ORG:
+    type: "origin_set"
+
+validation_rules:
+  - type: "error_if_mode_is_not"
+    mnemonics: ["NOP"]
+    modes: ["IMPLIED"]
+    message: "Instruction {mnemonic} must use inherent addressing (no operands)."
 ```
 
 See `TESTING.md` for profile validation tools and detailed instructions.
