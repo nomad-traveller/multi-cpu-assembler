@@ -16,9 +16,10 @@ def evaluate_expression(node, symbol_table, line_num, current_address: int = 0):
     """
     if node is None:
         return None
-    if isinstance(node, Number):
+    
+    if type(node).__name__ == 'Number':
         return node.value
-    if isinstance(node, Symbol):
+    if type(node).__name__ == 'Symbol':
         if node.name == '*':
             return current_address  # Return the current address
         value = symbol_table.resolve(node.name)

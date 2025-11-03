@@ -181,7 +181,6 @@ class Parser:
             return None
 
         self.logger.debug(f"Line parser result: {parsed_line}")
-
         instr = Instruction(line_num, original_text)
         instr.label = parsed_line.label
         instr.mnemonic = parsed_line.mnemonic

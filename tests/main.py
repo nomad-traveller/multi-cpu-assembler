@@ -1,9 +1,7 @@
-# main.py (JSON-based template version)
+# main.py (YAML-based template version)
 import argparse
 import re
 import os
-import importlib
-import json
 
 # Import JSON profiles dynamically - no custom classes needed
 from core.emitter import Emitter # Keep for type hinting if needed
@@ -21,7 +19,7 @@ import logging
 # and provides a template-based architecture for different CPU types
 
 class CPUProfileFactory:
-    """Factory for creating CPU profiles from JSON files and templates."""
+    """Factory for creating CPU profiles from YAML files."""
     
     def __init__(self):
         self.profiles_dir = os.path.join(os.path.dirname(__file__), "cpu_profiles")
@@ -33,28 +31,19 @@ class CPUProfileFactory:
         if not os.path.exists(self.profiles_dir):
             return
         
-        # Get all files and sort to prioritize YAML over JSON
+        # Get all YAML files
         files = os.listdir(self.profiles_dir)
-        # Sort: YAML files first, then JSON files
-        files.sort(key=lambda x: (0 if x.endswith(('.yaml', '.yml')) else 1, x))
         
         for file in files:
             cpu_name = None
-            if file.endswith('.json'):
-                cpu_name = file[:-5]
-            elif file.endswith('.yaml'):
+            if file.endswith('.yaml'):
                 cpu_name = file[:-5]
             elif file.endswith('.yml'):
                 cpu_name = file[:-4]
             
             if cpu_name:
-                # Skip if already loaded (YAML takes precedence over JSON)
-                if cpu_name in self._profile_cache:
-                    continue
-                
                 self._profile_cache[cpu_name] = {
-                    'file': os.path.join(self.profiles_dir, file),
-                    'class': None
+                    'file': os.path.join(self.profiles_dir, file)
                 }
     
     def get_available_cpus(self) -> list[str]:
@@ -68,26 +57,10 @@ class CPUProfileFactory:
         if cpu_name not in self._profile_cache:
             raise ValueError(f"CPU profile '{cpu_name}' not found. Available: {self.get_available_cpus()}")
         
-        # No special handling needed - all profiles use generic ConfigCPUProfile
-        
-        # Generic profile loading
+        # Load profile using generic ConfigCPUProfile
         profile_info = self._profile_cache[cpu_name]
         profile_file = profile_info['file']
         
-        # Try to load a custom profile class if it exists
-        class_file = os.path.join(self.profiles_dir, f"json_{cpu_name}_profile.py")
-        if os.path.exists(class_file):
-            module_name = f"cpu_profiles.json_{cpu_name}_profile"
-            class_name = f"JSON{cpu_name.upper().replace('-', '')}Profile"
-            
-            try:
-                module = importlib.import_module(module_name)
-                profile_class = getattr(module, class_name)
-                return profile_class(diagnostics)
-            except (ImportError, AttributeError):
-                pass
-        
-        # Fall back to generic profile
         from cpu_profile_base import ConfigCPUProfile
         return ConfigCPUProfile(diagnostics, profile_file)
 

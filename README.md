@@ -1,6 +1,6 @@
 # Multi-CPU Assembler
 
-A modular, extensible assembler supporting multiple CPU architectures through JSON5 and YAML-based CPU profiles. Currently supports 65C02 and Motorola 6800 with easy extensibility for additional architectures.
+A modular, extensible assembler supporting multiple CPU architectures through YAML-based CPU profiles. Currently supports 65C02 and Motorola 6800 with easy extensibility for additional architectures.
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -8,15 +8,14 @@ A modular, extensible assembler supporting multiple CPU architectures through JS
 
 ## Features
 
-- **Dual Format Support**: CPU architectures defined in both JSON5 and YAML formats
+- **YAML Format Support**: CPU architectures defined in YAML format
 - **Multi-CPU Support**: Currently supports 65C02 and Motorola 6800 architectures
-- **Easy Extensibility**: Add new CPUs by creating JSON5 or YAML profiles - no code changes needed
-- **Automatic Format Detection**: Seamlessly switch between JSON5 and YAML based on file extension
+- **Easy Extensibility**: Add new CPUs by creating YAML profiles - no code changes needed
 - **Two-Pass Assembly**: Efficient symbol resolution and error detection
 - **Enhanced Error Reporting**: Detailed warnings and error messages for common assembly mistakes
 - **Generic Validation Engine**: Rule-based validation system that's fully CPU-agnostic
 - **Expression Evaluation**: Support for complex expressions with operators and symbols
-- **Comprehensive Testing**: Full test suite with profile validation for both formats
+- **Comprehensive Testing**: Full test suite with profile validation
 - **Independent Testing**: CPU profiles can be validated without running the assembler
 
 ## Quick Start
@@ -66,23 +65,23 @@ START:  LDA #$48        ; 'H'
 ## Supported CPUs
 
 ### 65C02 (Enhanced 6502)
-- **Profiles**: `compiler/cpu_profiles/65c02.json` (JSON5) and `compiler/cpu_profiles/65c02.yaml` (YAML)
+- **Profiles**: `compiler/cpu_profiles/65c02.yaml` (YAML)
 - **Instructions**: 64 mnemonics, 178 total opcodes
 - **Addressing Modes**: 14 modes (IMPLIED, IMMEDIATE, ABSOLUTE, etc.)
 - **Features**: Full 65C02 instruction set with enhanced error checking
 
 ### Motorola 6800
-- **Profiles**: `compiler/cpu_profiles/6800.json` (JSON5) and `compiler/cpu_profiles/6800.yaml` (YAML)
+- **Profiles**: `compiler/cpu_profiles/6800.yaml` (YAML)
 - **Instructions**: 27 mnemonics, 61 total opcodes
 - **Addressing Modes**: 8 modes (INHERENT, IMMEDIATE, EXTENDED, etc.)
 - **Features**: Complete 6800 instruction set with accumulator operations
 
 ### Adding New CPUs
-New CPU architectures can be added by creating JSON5 or YAML profiles in `compiler/cpu_profiles/`. No code changes required! See `TESTING.md` for profile validation tools.
+New CPU architectures can be added by creating YAML profiles in `compiler/cpu_profiles/`. No code changes required! See `TESTING.md` for profile validation tools.
 
 ## Architecture
 
-The assembler follows a clean, modular architecture with JSON5/YAML-driven CPU profiles:
+The assembler follows a clean, modular architecture with YAML-driven CPU profiles:
 
 ```
 main.py (Entry Point)
@@ -90,21 +89,20 @@ main.py (Entry Point)
 ├── assembler.py (Two-pass assembly)
 ├── emitter.py (Output generation)
 ├── diagnostics.py (Error reporting)
-├── cpu_profile_base.py (Dual-format profile loader)
+├── cpu_profile_base.py (YAML profile loader)
 └── cpu_profiles/ (CPU definitions)
-    ├── 65c02.json (JSON5 format)
     ├── 65c02.yaml (YAML format)
-    ├── 6800.json (JSON5 format)
     ├── 6800.yaml (YAML format)
-    └── [new_cpu].json/.yaml (add your own!)
+    └── [new_cpu].yaml (add your own!)
 ```
 
 ### Key Components
 
 - **Parser**: Converts assembly source into structured instructions
 - **Assembler**: Performs two-pass assembly with symbol resolution
-- **JSONCPUProfile**: Loads and validates JSON5/YAML CPU profiles with automatic format detection
-- **CPU Profiles**: JSON5 or YAML files defining opcodes, addressing modes, and validation rules
+- **ConfigCPUProfile**: Loads and validates YAML CPU profiles
+- **CPUProfileFactory**: Simple factory that creates ConfigCPUProfile instances from YAML files
+- **CPU Profiles**: YAML files defining opcodes, addressing modes, and validation rules
 - **Generic Validation Engine**: Rule-based system that validates instructions without CPU-specific code
 - **Expression Evaluator**: Handles complex expressions and symbol resolution
 - **Diagnostics**: Centralized error and warning reporting
@@ -140,9 +138,9 @@ validation_rules:
 
 ### Adding New CPU Support
 
-The assembler is designed for easy extension through JSON5 or YAML profiles. To add a new CPU:
+The assembler is designed for easy extension through YAML profiles. To add a new CPU:
 
-1. **Create Profile**: Add `new_cpu.json` or `new_cpu.yaml` in `compiler/cpu_profiles/`
+1. **Create Profile**: Add `new_cpu.yaml` in `compiler/cpu_profiles/`
 2. **Define CPU Info**: Include name, description, data width, address width, endianness
 3. **Specify Addressing Modes**: List all addressing modes with enum values
 4. **Add Opcodes**: Define all instructions with their opcodes, cycles, and flags
@@ -150,26 +148,7 @@ The assembler is designed for easy extension through JSON5 or YAML profiles. To 
 6. **Add Validation Rules**: Use generic rule-based validation system
 7. **Validate**: Use `python validate_json_profiles.py --all` to test
 
-**Example JSON5 Structure**:
-```json
-{
-  "cpu_info": {
-    "name": "NEW_CPU",
-    "description": "New CPU Architecture",
-    "data_width": 8,
-    "address_width": 16
-  },
-  "addressing_modes": {
-    "IMPLIED": 0,
-    "IMMEDIATE": 1
-  },
-  "opcodes": {
-    "NOP": {
-      "IMPLIED": {"opcode": 0x00, "cycles": 2}
-    }
-  }
-}
-```
+The simplified CPUProfileFactory automatically detects and loads any YAML profile files without requiring custom Python code.
 
 **Example YAML Structure**:
 ```yaml
@@ -210,7 +189,7 @@ See `TESTING.md` for profile validation tools and detailed instructions.
 # Run all tests
 . compiler/.venv/bin/activate && python -m unittest discover -s tests -p "test_*.py"
 
-# Validate CPU profiles (both JSON5 and YAML)
+# Validate CPU profiles (YAML)
 python validate_json_profiles.py --all
 
 # Interactive profile testing
@@ -287,17 +266,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 This project includes comprehensive testing tools:
 
-- **Unit Tests**: 20 tests covering JSON5/YAML profiles, assembly workflow, and CLI
-- **Profile Validation**: Standalone tools for validating CPU profiles in both formats
+- **Unit Tests**: 20 tests covering YAML profiles, assembly workflow, and CLI
+- **Profile Validation**: Standalone tools for validating CPU profiles
 - **Interactive Testing**: Real-time testing of addressing modes and opcodes
 - **End-to-End Testing**: Complete assembly workflow validation
-- **Format Conversion**: Tools to convert between JSON5 and YAML formats
+
 
 See `TESTING.md` for detailed testing documentation and usage examples.
 
 ## Roadmap
 
-- [ ] Add Z80 CPU support (JSON5/YAML profile)
+- [ ] Add Z80 CPU support (YAML profile)
 - [ ] Implement macro system
 - [ ] Add conditional assembly
 - [ ] Support additional output formats (Intel HEX, S-record)

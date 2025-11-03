@@ -1,7 +1,6 @@
 # cpu_profiles.py - CPU Profile Abstract Base Class
 from abc import ABC, abstractmethod
 from typing import Any, TYPE_CHECKING
-import json
 import os
 import re
 from enum import Enum
@@ -25,7 +24,7 @@ def create_addressing_mode_enum(cpu_name: str, addressing_modes: dict):
 
 
 class ConfigCPUProfile:
-    """Configuration-driven CPU Profile that loads configuration from JSON5 or YAML files."""
+    """Configuration-driven CPU Profile that loads configuration from YAML files."""
     
     def __init__(self, diagnostics, profile_file_path: str):
         self.diagnostics = diagnostics
@@ -34,7 +33,7 @@ class ConfigCPUProfile:
         self._create_addressing_mode_enum()
     
     def _load_profile(self, profile_file_path: str):
-        """Load CPU profile from JSON5 or YAML file."""
+        """Load CPU profile from YAML file."""
         try:
             file_ext = os.path.splitext(profile_file_path)[1].lower()
             
@@ -47,23 +46,8 @@ class ConfigCPUProfile:
                     except ImportError:
                         raise ImportError("To load '.yaml' profiles, please 'pip install PyYAML'")
                         
-                elif file_ext == '.json':
-                    # Lazy-load json5 library only when needed
-                    try:
-                        import json5
-                        self._profile_data = json5.load(f)
-                    except ImportError:
-                        # Fallback to regular JSON if json5 not available
-                        self._profile_data = json.load(f)
-                        
                 else:
-                    # Default to JSON5 for unknown extensions
-                    try:
-                        import json5
-                        self._profile_data = json5.load(f)
-                    except ImportError:
-                        # Fallback to regular JSON if json5 not available
-                        self._profile_data = json.load(f)
+                    raise ValueError(f"Unsupported file format: {file_ext}. Only YAML files (.yaml, .yml) are supported.")
                         
         except FileNotFoundError:
             raise FileNotFoundError(f"CPU profile file not found: {profile_file_path}")
@@ -142,7 +126,7 @@ class ConfigCPUProfile:
         return str(mode_enum) if mode_enum else None
     
     def parse_addressing_mode(self, operand_str: str) -> tuple[Any, Any]:
-        """Parse addressing mode using JSON patterns (optimized for 8-bit CPUs)."""
+        """Parse addressing mode using YAML patterns (optimized for 8-bit CPUs)."""
         operand_str = operand_str.strip().upper()
         if not operand_str:
             return (self.get_addressing_mode_enum("INHERENT"), None)
@@ -215,7 +199,7 @@ class ConfigCPUProfile:
         return val_str
     
     def _convert_opcode_to_int(self, opcode_value) -> int:
-        """Convert opcode value to integer (handles hex strings from JSON5)."""
+        """Convert opcode value to integer (handles hex strings from YAML)."""
         if isinstance(opcode_value, str):
             # Handle hexadecimal strings like "0x69"
             if opcode_value.startswith('0x') or opcode_value.startswith('0X'):
@@ -251,7 +235,7 @@ class ConfigCPUProfile:
         return self._convert_numeric_value(clean_str)
     
     def parse_instruction(self, instruction, parser: 'Parser') -> None:
-        """Parse CPU instruction using JSON configuration."""
+        """Parse CPU instruction using YAML configuration."""
         operand_str = instruction.operand_str
         mnemonic = instruction.mnemonic
         
@@ -283,7 +267,7 @@ class ConfigCPUProfile:
         self._apply_post_processing_rules(instruction)
     
     def _apply_post_processing_rules(self, instruction):
-        """Apply CPU-specific post-processing rules from JSON configuration."""
+        """Apply CPU-specific post-processing rules from YAML configuration."""
         mnemonic = instruction.mnemonic
         mode = instruction.mode
         
@@ -293,7 +277,7 @@ class ConfigCPUProfile:
         if not mode_name:
             return
         
-        # Get post-processing rules from JSON
+        # Get post-processing rules from YAML
         post_processing = self._profile_data.get("post_processing", {})
         
         # Branch instruction handling
@@ -312,7 +296,7 @@ class ConfigCPUProfile:
                 instruction.mode = self.get_addressing_mode_enum(rule["to_mode"])
     
     def parse_directive(self, instruction, parser: 'Parser') -> None:
-        """Parse assembler directive using JSON configuration."""
+        """Parse assembler directive using YAML configuration."""
         mnemonic = instruction.directive
         operand_str = instruction.operand_str
         
@@ -644,7 +628,7 @@ class ConfigCPUProfile:
             return True
 
     def encode_instruction(self, instruction, symbol_table) -> bool:
-        """Generic instruction encoding using JSON configuration."""
+        """Generic instruction encoding using YAML configuration."""
         from core.expression_evaluator import evaluate_expression
         
         mnemonic = instruction.mnemonic

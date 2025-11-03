@@ -33,57 +33,57 @@ addressing_mode_patterns:
 - pattern: ^[aA]$
   mode: ACCUMULATOR
   group_index: null
-- pattern: ^#(\$?[0-9A-F]+|[A-Z_][A-Z0-9_]*)$
+- pattern: '^#(\$?[0-9A-F]+|[A-Z_][A-Z0-9_]*)$'
   mode: IMMEDIATE
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^\((\$?[0-9A-F]{1,2}),X\)$
+- pattern: '^\((\$?[0-9A-F]{1,2}),X\)$'
   mode: INDIRECT_X
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^\((\$?[0-9A-F]{1,2})\),Y$
+- pattern: '^\((\$?[0-9A-F]{1,2})\),Y$'
   mode: INDIRECT_Y
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^\((\$?[0-9A-F]{3,4})\)$
+- pattern: '^\((\$?[0-9A-F]{3,4})\)$'
   mode: INDIRECT
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^\((\$?[0-9A-F]{1,2})\)$
+- pattern: '^\((\$?[0-9A-F]{1,2})\)$'
   mode: ZEROPAGE_INDIRECT
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^(\$?[0-9A-F]{3,4}),X$
+- pattern: '^(\$?[0-9A-F]{3,4}),X$'
   mode: ABSOLUTE_X
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^(\$?[0-9A-F]{3,4}),Y$
+- pattern: '^(\$?[0-9A-F]{3,4}),Y$'
   mode: ABSOLUTE_Y
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^(\$?[0-9A-F]{1,2}),X$
+- pattern: '^(\$?[0-9A-F]{1,2}),X$'
   mode: ZEROPAGE_X
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^(\$?[0-9A-F]{1,2}),Y$
+- pattern: '^(\$?[0-9A-F]{1,2}),Y$'
   mode: ZEROPAGE_Y
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^(\$?[0-9A-F]{3,4})$
+- pattern: '^(\$?[0-9A-F]{3,4})$'
   mode: ABSOLUTE
   group_index: 1
   flags:
   - IGNORECASE
-- pattern: ^(\$?[0-9A-F]{1,2})$
+- pattern: '^(\$?[0-9A-F]{1,2})$'
   mode: ZEROPAGE
   group_index: 1
   flags:

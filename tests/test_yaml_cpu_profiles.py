@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import unittest
-import json
 import os
 import sys
 from unittest.mock import patch, mock_open, MagicMock
@@ -14,14 +13,14 @@ from main import CPUProfileFactory
 from core.diagnostics import Diagnostics
 
 
-class TestConfigCPUProfile(unittest.TestCase):
-    """Test cases for ConfigCPUProfile class"""
+class TestYAMLConfigCPUProfile(unittest.TestCase):
+    """Test cases for YAML ConfigCPUProfile class"""
 
     def setUp(self):
         """Set up test fixtures"""
         self.diagnostics = Diagnostics()
         
-        # Create a minimal valid JSON profile structure based on the actual format
+        # Create a minimal valid YAML profile structure based on the actual format
         self.valid_profile_data = {
             "cpu_info": {
                 "name": "65C02",
@@ -79,9 +78,10 @@ class TestConfigCPUProfile(unittest.TestCase):
         }
 
     def test_load_valid_profile(self):
-        """Test loading a valid JSON profile"""
-        with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
+        """Test loading a valid YAML profile"""
+        import yaml
+        with patch("builtins.open", mock_open(read_data=yaml.dump(self.valid_profile_data))):
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.yaml")
             
         self.assertEqual(profile.cpu_info["name"], "65C02")
         self.assertEqual(profile.cpu_info["description"], "WDC 65C02 microprocessor")
@@ -89,8 +89,9 @@ class TestConfigCPUProfile(unittest.TestCase):
 
     def test_get_addressing_modes(self):
         """Test getting addressing mode information"""
-        with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
+        import yaml
+        with patch("builtins.open", mock_open(read_data=yaml.dump(self.valid_profile_data))):
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.yaml")
             
         modes = profile.get_addressing_mode_enum("IMMEDIATE")
         self.assertEqual(modes.value, 1)  # Enum value
@@ -101,8 +102,9 @@ class TestConfigCPUProfile(unittest.TestCase):
 
     def test_get_opcode_details(self):
         """Test getting opcode information"""
-        with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
+        import yaml
+        with patch("builtins.open", mock_open(read_data=yaml.dump(self.valid_profile_data))):
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.yaml")
             
         # Create a mock instruction
         mock_instruction = MagicMock()
@@ -116,8 +118,9 @@ class TestConfigCPUProfile(unittest.TestCase):
 
     def test_parse_addressing_mode(self):
         """Test parsing addressing modes"""
-        with patch("builtins.open", mock_open(read_data=json.dumps(self.valid_profile_data))):
-            profile = ConfigCPUProfile(self.diagnostics, "test_profile.json")
+        import yaml
+        with patch("builtins.open", mock_open(read_data=yaml.dump(self.valid_profile_data))):
+            profile = ConfigCPUProfile(self.diagnostics, "test_profile.yaml")
             
         # Test immediate mode
         mode, value = profile.parse_addressing_mode("#$FF")
@@ -141,13 +144,13 @@ class TestConfigCPUProfile(unittest.TestCase):
     def test_file_not_found(self):
         """Test handling of missing profile file"""
         with self.assertRaises(FileNotFoundError):
-            ConfigCPUProfile(self.diagnostics, "nonexistent_file.json")
+            ConfigCPUProfile(self.diagnostics, "nonexistent_file.yaml")
 
-    def test_invalid_json(self):
-        """Test handling of invalid JSON"""
-        with patch("builtins.open", mock_open(read_data="invalid json content")):
+    def test_invalid_yaml(self):
+        """Test handling of invalid YAML"""
+        with patch("builtins.open", mock_open(read_data="invalid: yaml: content: [")):
             with self.assertRaises(ValueError):
-                ConfigCPUProfile(self.diagnostics, "invalid.json")
+                ConfigCPUProfile(self.diagnostics, "invalid.yaml")
 
 
 class TestCPUProfileFactory(unittest.TestCase):
@@ -162,7 +165,7 @@ class TestCPUProfileFactory(unittest.TestCase):
     def test_get_available_cpus(self, mock_listdir, mock_exists):
         """Test getting list of available CPUs"""
         mock_exists.return_value = True
-        mock_listdir.return_value = ["65c02.json", "6800.json", "README.md"]
+        mock_listdir.return_value = ["65c02.yaml", "6800.yaml", "README.md"]
         
         factory = CPUProfileFactory()
         cpus = factory.get_available_cpus()
@@ -173,19 +176,26 @@ class TestCPUProfileFactory(unittest.TestCase):
 
     @patch('os.path.exists')
     @patch('os.listdir')
-    @patch('builtins.open', mock_open(read_data=json.dumps({
-        "cpu_info": {"name": "65C02", "description": "Test CPU", "data_width": 8, "address_width": 16},
-        "addressing_modes": {"IMPLIED": 0, "IMMEDIATE": 1},
-        "opcodes": {"NOP": {"IMPLIED": [0xEA, 0, {"base": 2}, ""]}},
-        "branch_mnemonics": [],
-        "addressing_mode_patterns": [],
-        "directives": {},
-        "validation_rules": {}
-    })))
+    @patch('builtins.open', mock_open(read_data="""cpu_info:
+  name: "65C02"
+  description: "Test CPU"
+  data_width: 8
+  address_width: 16
+addressing_modes:
+  IMPLIED: 0
+  IMMEDIATE: 1
+opcodes:
+  NOP:
+    IMPLIED: [0xEA, 0, 2, ""]
+branch_mnemonics: []
+addressing_mode_patterns: []
+directives: {}
+validation_rules: {}
+"""))
     def test_create_profile_success(self, mock_listdir, mock_exists):
         """Test successful profile creation"""
         mock_exists.return_value = True
-        mock_listdir.return_value = ["65c02.json"]
+        mock_listdir.return_value = ["65c02.yaml"]
         
         factory = CPUProfileFactory()
         profile = factory.create_profile("65c02", self.diagnostics)
@@ -198,11 +208,11 @@ class TestCPUProfileFactory(unittest.TestCase):
     def test_create_profile_file_not_found(self, mock_listdir, mock_exists):
         """Test profile creation when file doesn't exist"""
         mock_exists.return_value = True
-        mock_listdir.return_value = ["65c02.json"]
+        mock_listdir.return_value = ["65c02.yaml"]
         
         factory = CPUProfileFactory()
         
-        # Mock the file open to raise FileNotFoundError
+        # Mock to raise FileNotFoundError
         with patch('builtins.open', side_effect=FileNotFoundError("File not found")):
             with self.assertRaises(FileNotFoundError):
                 factory.create_profile("65c02", self.diagnostics)

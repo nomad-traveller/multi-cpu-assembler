@@ -1,6 +1,6 @@
 # Testing Guide
 
-This document provides comprehensive testing documentation for the Multi-CPU Assembler, including JSON5/YAML CPU profile validation, unit testing, and interactive testing tools.
+This document provides comprehensive testing documentation for the Multi-CPU Assembler, including YAML CPU profile validation, unit testing, and interactive testing tools.
 
 ## Overview
 
