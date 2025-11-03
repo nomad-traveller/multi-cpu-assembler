@@ -190,10 +190,7 @@ See `TESTING.md` for profile validation tools and detailed instructions.
 . compiler/.venv/bin/activate && python -m unittest discover -s tests -p "test_*.py"
 
 # Validate CPU profiles (YAML)
-python validate_json_profiles.py --all
-
-# Interactive profile testing
-python test_json_interactive.py
+source compiler/.venv/bin/activate && python -m unittest tests.test_yaml_cpu_profiles
 ```
 
 See `TESTING.md` for comprehensive testing documentation.
