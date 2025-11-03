@@ -6,7 +6,7 @@ import re
 from enum import Enum
 
 if TYPE_CHECKING:
-    from core.parser import Parser
+    from parser import Parser
 
 
 def create_addressing_mode_enum(cpu_name: str, addressing_modes: dict):
@@ -543,7 +543,7 @@ class ConfigCPUProfile:
     
     def handle_directive_pass1(self, instruction, symbol_table, current_address: int) -> int:
         """Handle directive processing during first pass. Returns new current_address."""
-        from core.expression_evaluator import evaluate_expression
+        from expression_evaluator import evaluate_expression
         
         directive = instruction.directive
         directive_info = self.directives.get(directive, {})
@@ -581,7 +581,7 @@ class ConfigCPUProfile:
     
     def handle_directive_pass2(self, instruction, symbol_table) -> bool:
         """Handle directive processing during second pass. Returns True on success."""
-        from core.expression_evaluator import evaluate_expression
+        from expression_evaluator import evaluate_expression
         
         directive = instruction.directive
         directive_info = self.directives.get(directive, {})
@@ -629,7 +629,7 @@ class ConfigCPUProfile:
 
     def encode_instruction(self, instruction, symbol_table) -> bool:
         """Generic instruction encoding using YAML configuration."""
-        from core.expression_evaluator import evaluate_expression
+        from expression_evaluator import evaluate_expression
         
         mnemonic = instruction.mnemonic
         mode = instruction.mode

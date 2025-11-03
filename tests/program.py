@@ -1,4 +1,4 @@
-from .symbol_table import SymbolTable
+from symbol_table import SymbolTable
 
 class Program:
     def __init__(self, symbol_table: 'SymbolTable'):

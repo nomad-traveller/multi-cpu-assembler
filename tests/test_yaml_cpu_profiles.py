@@ -5,12 +5,12 @@ import os
 import sys
 from unittest.mock import patch, mock_open, MagicMock
 
-# Add the compiler directory to the path to import modules
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'compiler'))
+# Add the tests directory to the path to import modules
+sys.path.insert(0, os.path.dirname(__file__))
 
 from cpu_profile_base import ConfigCPUProfile
 from main import CPUProfileFactory
-from core.diagnostics import Diagnostics
+from diagnostics import Diagnostics
 
 
 class TestYAMLConfigCPUProfile(unittest.TestCase):

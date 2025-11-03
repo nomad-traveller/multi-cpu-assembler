@@ -1,4 +1,4 @@
-from .diagnostics import Diagnostics
+from diagnostics import Diagnostics
 
 class SymbolTable:
     def __init__(self, diagnostics: 'Diagnostics'):

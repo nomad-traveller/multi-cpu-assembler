@@ -1,5 +1,5 @@
 from typing import Optional, List, Any
-from .diagnostics import Diagnostics
+from diagnostics import Diagnostics
 
 class Instruction:
     def __init__(self, line_num: int, original_text: str = ""):

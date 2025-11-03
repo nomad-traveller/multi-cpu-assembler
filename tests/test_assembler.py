@@ -5,14 +5,14 @@ import sys
 import os
 from unittest.mock import MagicMock, patch
 
-# Add the compiler directory to the path to import modules
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'compiler'))
+# Add the tests directory to the path to import modules
+sys.path.insert(0, os.path.dirname(__file__))
 
-from core.assembler import Assembler
-from core.diagnostics import Diagnostics
-from core.symbol_table import SymbolTable
-from core.program import Program
-from core.instruction import Instruction
+from assembler import Assembler
+from diagnostics import Diagnostics
+from symbol_table import SymbolTable
+from program import Program
+from instruction import Instruction
 
 class TestAssembler(unittest.TestCase):
     """Unit tests for the Assembler class"""

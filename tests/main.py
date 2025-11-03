@@ -4,14 +4,14 @@ import re
 import os
 
 # Import JSON profiles dynamically - no custom classes needed
-from core.emitter import Emitter # Keep for type hinting if needed
-from core.expression_evaluator import evaluate_expression
-from core.diagnostics import Diagnostics
-from core.symbol_table import SymbolTable
-from core.program import Program
-from core.parser import Parser
-from core.instruction import Instruction
-from core.assembler import Assembler
+from emitter import Emitter # Keep for type hinting if needed
+from expression_evaluator import evaluate_expression
+from diagnostics import Diagnostics
+from symbol_table import SymbolTable
+from program import Program
+from parser import Parser
+from instruction import Instruction
+from assembler import Assembler
 import logging
 
 # --- CPU Profile Template System ---
@@ -22,7 +22,7 @@ class CPUProfileFactory:
     """Factory for creating CPU profiles from YAML files."""
     
     def __init__(self):
-        self.profiles_dir = os.path.join(os.path.dirname(__file__), "cpu_profiles")
+        self.profiles_dir = os.path.join(os.path.dirname(__file__), "..", "compiler", "cpu_profiles")
         self._profile_cache = {}
         self._load_available_profiles()
     
