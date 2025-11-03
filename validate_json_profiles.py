@@ -9,6 +9,12 @@ import sys
 import os
 from typing import Dict, List, Any
 
+try:
+    import json5
+except ImportError:
+    json5 = None
+    print("⚠️  Warning: json5 not available, falling back to JSON parser")
+
 def validate_cpu_profile(file_path: str) -> Dict[str, Any]:
     """Validate a CPU profile JSON file and return results."""
     result = {
@@ -20,15 +26,15 @@ def validate_cpu_profile(file_path: str) -> Dict[str, Any]:
     
     try:
         with open(file_path, 'r') as f:
-            data = json.load(f)
-    except json.JSONDecodeError as e:
-        result['errors'].append(f"JSON syntax error: {e}")
-        return result
+            if json5 is not None:
+                data = json5.load(f)
+            else:
+                data = json.load(f)
     except FileNotFoundError:
         result['errors'].append("File not found")
         return result
     except Exception as e:
-        result['errors'].append(f"Unexpected error: {e}")
+        result['errors'].append(f"JSON5/JSON syntax error: {e}")
         return result
     
     # Basic structure validation
@@ -120,7 +126,22 @@ def validate_cpu_profile(file_path: str) -> Dict[str, Any]:
                     # Check opcode value (first element)
                     if len(opcode_data) > 0:
                         opcode_val = opcode_data[0]
-                        if not isinstance(opcode_val, int) or opcode_val < 0 or opcode_val > 255:
+                        # Accept both integers and hexadecimal strings (e.g., 169 or "0xA9")
+                        valid_opcode = False
+                        if isinstance(opcode_val, int):
+                            valid_opcode = 0 <= opcode_val <= 255
+                        elif isinstance(opcode_val, str):
+                            # Handle hex strings like "0xA9" or "0xa9"
+                            if opcode_val.startswith('0x') or opcode_val.startswith('0X'):
+                                try:
+                                    hex_val = int(opcode_val, 16)
+                                    valid_opcode = 0 <= hex_val <= 255
+                                except ValueError:
+                                    valid_opcode = False
+                            else:
+                                valid_opcode = False
+                        
+                        if not valid_opcode:
                             result['errors'].append(f"Invalid opcode value for {mnemonic}.{mode_name}: {opcode_val}")
                     
                     # Check operand size (second element)

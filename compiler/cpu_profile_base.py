@@ -5,6 +5,10 @@ import json
 import os
 import re
 from enum import Enum
+try:
+    import json5
+except ImportError:
+    json5 = None
 
 if TYPE_CHECKING:
     from core.parser import Parser
@@ -33,14 +37,19 @@ class JSONCPUProfile:
         self._create_addressing_mode_enum()
     
     def _load_profile(self, json_file_path: str):
-        """Load CPU profile from JSON file."""
+        """Load CPU profile from JSON5 file."""
         try:
-            with open(json_file_path, 'r') as f:
-                self._profile_data = json.load(f)
+            if json5 is not None:
+                with open(json_file_path, 'r') as f:
+                    self._profile_data = json5.load(f)
+            else:
+                # Fallback to regular JSON if json5 not available
+                with open(json_file_path, 'r') as f:
+                    self._profile_data = json.load(f)
         except FileNotFoundError:
             raise FileNotFoundError(f"CPU profile file not found: {json_file_path}")
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in CPU profile {json_file_path}: {e}")
+        except Exception as e:
+            raise ValueError(f"Invalid JSON5/JSON in CPU profile {json_file_path}: {e}")
     
     def _create_addressing_mode_enum(self):
         """Create dynamic Enum for addressing modes."""
@@ -176,6 +185,26 @@ class JSONCPUProfile:
         # Return as string (label/symbol)
         return val_str
     
+    def _convert_opcode_to_int(self, opcode_value) -> int:
+        """Convert opcode value to integer (handles hex strings from JSON5)."""
+        if isinstance(opcode_value, str):
+            # Handle hexadecimal strings like "0x69"
+            if opcode_value.startswith('0x') or opcode_value.startswith('0X'):
+                return int(opcode_value, 16)
+            # Handle hex strings without 0x prefix
+            elif opcode_value.startswith('$'):
+                return int(opcode_value[1:], 16)
+            else:
+                # Try to parse as hex, fallback to decimal
+                try:
+                    return int(opcode_value, 16)
+                except ValueError:
+                    return int(opcode_value)
+        elif isinstance(opcode_value, int):
+            return opcode_value
+        else:
+            raise ValueError(f"Invalid opcode format: {opcode_value}")
+    
     def _extract_from_operand(self, operand_str: str, mode_name: str) -> int | str | None:
         """Extract value from operand string based on addressing mode."""
         # Remove addressing mode syntax characters
@@ -288,7 +317,11 @@ class JSONCPUProfile:
         mode_name = self.get_addressing_mode_name(mode)
         
         if mode_name and mode_name in self.opcodes[mnemonic]:
-            return self.opcodes[mnemonic][mode_name]
+            opcode_details = self.opcodes[mnemonic][mode_name]
+            # Convert hex string opcodes to integers
+            if isinstance(opcode_details, list) and len(opcode_details) > 0:
+                opcode_details[0] = self._convert_opcode_to_int(opcode_details[0])
+            return opcode_details
         
         # Handle automatic mode conversion (e.g., 6800 EXTENDED to DIRECT)
         post_processing = self._profile_data.get("post_processing", {})
@@ -303,12 +336,18 @@ class JSONCPUProfile:
                     target_mode = rule["to_mode"]
                     if target_mode in self.opcodes[mnemonic]:
                         instruction.mode = self.get_addressing_mode_enum(target_mode)
-                        return self.opcodes[mnemonic][target_mode]
+                        opcode_details = self.opcodes[mnemonic][target_mode]
+                        if isinstance(opcode_details, list) and len(opcode_details) > 0:
+                            opcode_details[0] = self._convert_opcode_to_int(opcode_details[0])
+                        return opcode_details
                 elif isinstance(instruction.operand_value, int) and instruction.operand_value <= rule["threshold"]:
                     target_mode = rule["to_mode"]
                     if target_mode in self.opcodes[mnemonic]:
                         instruction.mode = self.get_addressing_mode_enum(target_mode)
-                        return self.opcodes[mnemonic][target_mode]
+                        opcode_details = self.opcodes[mnemonic][target_mode]
+                        if isinstance(opcode_details, list) and len(opcode_details) > 0:
+                            opcode_details[0] = self._convert_opcode_to_int(opcode_details[0])
+                        return opcode_details
         
         return None
     
