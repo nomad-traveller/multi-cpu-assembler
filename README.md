@@ -84,28 +84,132 @@ New CPU architectures can be added by creating YAML profiles in `compiler/cpu_pr
 The assembler follows a clean, modular architecture with YAML-driven CPU profiles:
 
 ```
-main.py (Entry Point)
-├── parser.py (Source parsing)
-├── assembler.py (Two-pass assembly)
-├── emitter.py (Output generation)
-├── diagnostics.py (Error reporting)
-├── cpu_profile_base.py (YAML profile loader)
-└── cpu_profiles/ (CPU definitions)
-    ├── 65c02.yaml (YAML format)
-    ├── 6800.yaml (YAML format)
-    └── [new_cpu].yaml (add your own!)
+Project Root/
+├── compiler/
+│   ├── main.py (Entry Point)
+│   ├── cpu_profile_base.py (YAML profile loader)
+│   ├── core/ (Core assembler components)
+│   │   ├── parser.py (Source parsing)
+│   │   ├── assembler.py (Two-pass assembly)
+│   │   ├── emitter.py (Output generation)
+│   │   ├── diagnostics.py (Error reporting)
+│   │   ├── expression_evaluator.py (Expression evaluation)
+│   │   ├── expression_parser.py (Expression parsing)
+│   │   ├── instruction.py (Instruction representation)
+│   │   ├── program.py (Program representation)
+│   │   └── symbol_table.py (Symbol management)
+│   └── cpu_profiles/ (CPU definitions)
+│       ├── 65c02.yaml (65C02 CPU definition)
+│       ├── 6800.yaml (6800 CPU definition)
+│       └── [new_cpu].yaml (Add your own CPU!)
+├── tests/ (Test suite)
+│   ├── test_assembler.py (Core assembler tests)
+│   ├── test_yaml_cpu_profiles.py (Profile tests)
+│   ├── test_end_to_end_65c02.py (65C02 integration tests)
+│   ├── test_end_to_end_6800.py (6800 integration tests)
+│   └── test_*.s (Test assembly files)
+├── examples/ (Example programs)
+│   ├── mcu65c02.s (65C02 LED blink example)
+│   └── mcu6800.s (6800 PIA example)
+└── docs/ (Documentation)
+    ├── README.md (Main documentation)
+    ├── TESTING.md (Testing guide)
+    ├── CONTRIBUTING.md (Contribution guidelines)
+    └── YAML_MIGRATION.md (Migration guide)
 ```
 
 ### Key Components
 
-- **Parser**: Converts assembly source into structured instructions
-- **Assembler**: Performs two-pass assembly with symbol resolution
-- **ConfigCPUProfile**: Loads and validates YAML CPU profiles
+#### Core Components (`compiler/core/`)
+- **Parser**: Converts assembly source into structured instructions with proper syntax validation
+- **Assembler**: Performs two-pass assembly with symbol resolution and error handling
+- **Emitter**: Generates binary output and assembly listings with address information
+- **Diagnostics**: Centralized error and warning reporting with detailed messages
+- **Expression Evaluator**: Handles complex expressions, symbol resolution, and mathematical operations
+- **Expression Parser**: SLY-based parser for assembly expressions with operator precedence
+- **Instruction**: Represents assembly instructions with metadata and machine code
+- **Program**: Manages instruction sequences and assembly state
+- **Symbol Table**: Handles label definitions, symbol resolution, and EQU directives
+
+#### CPU Profile System (`compiler/`)
+- **ConfigCPUProfile**: Loads and validates YAML CPU profiles with automatic format detection
 - **CPUProfileFactory**: Simple factory that creates ConfigCPUProfile instances from YAML files
-- **CPU Profiles**: YAML files defining opcodes, addressing modes, and validation rules
-- **Generic Validation Engine**: Rule-based system that validates instructions without CPU-specific code
-- **Expression Evaluator**: Handles complex expressions and symbol resolution
-- **Diagnostics**: Centralized error and warning reporting
+- **CPU Profiles**: YAML files defining opcodes, addressing modes, directives, and validation rules
+
+#### Generic Validation Engine
+- **Rule-based System**: Validates instructions without CPU-specific code
+- **Multiple Rule Types**: Mode validation, range checking, register-specific rules
+- **Template-driven**: All validation logic defined in YAML, not Python code
+- **Backward Compatible**: Supports legacy validation format alongside new generic rules
+
+#### Testing Framework (`tests/`)
+- **Unit Tests**: Core component testing with mocking and isolation
+- **Integration Tests**: End-to-end assembly workflow validation
+- **Profile Tests**: YAML CPU profile validation and functionality testing
+- **Test Data**: Comprehensive assembly files for various scenarios
+
+## Project Structure
+
+```
+multi-cpu-assembler/
+├── compiler/                          # Main assembler package
+│   ├── main.py                        # CLI entry point and application bootstrap
+│   ├── cpu_profile_base.py            # YAML profile loader and factory
+│   ├── core/                          # Core assembler components
+│   │   ├── assembler.py               # Two-pass assembly engine
+│   │   ├── parser.py                  # Assembly source parser
+│   │   ├── emitter.py                 # Binary output generator
+│   │   ├── diagnostics.py             # Error reporting system
+│   │   ├── expression_evaluator.py     # Expression evaluation engine
+│   │   ├── expression_parser.py        # SLY-based expression parser
+│   │   ├── instruction.py             # Instruction representation
+│   │   ├── program.py                # Program state management
+│   │   └── symbol_table.py           # Symbol resolution and labels
+│   ├── cpu_profiles/                 # CPU architecture definitions
+│   │   ├── 65c02.yaml               # 65C02 CPU profile (178 opcodes)
+│   │   ├── 6800.yaml                # 6800 CPU profile (61 opcodes)
+│   │   └── [new_cpu].yaml           # Add your own CPU here!
+│   └── .venv/                       # Python virtual environment
+├── tests/                            # Comprehensive test suite
+│   ├── test_assembler.py              # Core assembler unit tests (4 tests)
+│   ├── test_yaml_cpu_profiles.py      # YAML profile tests (10 tests)
+│   ├── test_end_to_end_65c02.py     # 65C02 integration tests (5 tests)
+│   ├── test_end_to_end_6800.py      # 6800 integration tests (5 tests)
+│   ├── test_comprehensive_65c02.s     # Comprehensive 65C02 test file
+│   ├── test_comprehensive_6800.s      # Comprehensive 6800 test file
+│   ├── test_simple_65c02.s           # Simple 65C02 test file
+│   └── test_simple.s                 # Generic test file
+├── examples/                         # Example assembly programs
+│   ├── mcu65c02.s                  # 65C02 LED blink program
+│   ├── mcu65c02.bin                # Compiled 65C02 binary
+│   ├── mcu6800.s                   # 6800 PIA control program
+│   └── mcu6800.bin                # Compiled 6800 binary
+├── .github/                          # GitHub configuration
+│   ├── ISSUE_TEMPLATE/                # Issue templates
+│   │   ├── bug_report.md
+│   │   └── feature_request.md
+│   └── PULL_REQUEST_TEMPLATE.md       # PR template
+├── docs/                             # Project documentation
+│   ├── README.md                     # Main documentation (this file)
+│   ├── TESTING.md                    # Testing procedures and guidelines
+│   ├── CONTRIBUTING.md                # Contribution guidelines
+│   ├── AGENTS.md                    # Development agent guidelines
+│   ├── YAML_MIGRATION.md             # Profile format migration guide
+│   └── GITHUB_ISSUES.md             # Issue tracking templates
+├── LICENSE                           # MIT License
+├── .gitignore                        # Git ignore rules
+└── setup_github.sh                   # GitHub setup script
+```
+
+### Directory Purposes
+
+- **`compiler/`**: Main package containing the assembler implementation
+- **`compiler/core/`**: Core assembly components with clear separation of concerns
+- **`compiler/cpu_profiles/`**: YAML-based CPU architecture definitions
+- **`tests/`**: Complete test suite with unit and integration tests
+- **`examples/`**: Working assembly programs demonstrating CPU features
+- **`.github/`**: GitHub templates and automation configuration
+- **`docs/`**: Comprehensive documentation for users and contributors
 
 ### Generic Validation Engine
 
@@ -146,7 +250,7 @@ The assembler is designed for easy extension through YAML profiles. To add a new
 4. **Add Opcodes**: Define all instructions with their opcodes, cycles, and flags
 5. **Define Directives**: Specify assembler directives (EQU, .ORG, .BYTE, etc.)
 6. **Add Validation Rules**: Use generic rule-based validation system
-7. **Validate**: Use `python validate_json_profiles.py --all` to test
+7. **Validate**: Use `python -m unittest tests.test_yaml_cpu_profiles` to test
 
 The simplified CPUProfileFactory automatically detects and loads any YAML profile files without requiring custom Python code.
 
@@ -201,17 +305,13 @@ See `TESTING.md` for comprehensive testing documentation.
 ### Building Examples
 
 ```bash
-cd compiler
-source .venv/bin/activate
+. compiler/.venv/bin/activate
 
 # 65C02 example
-python main.py examples/mcu65c02.s -o examples/mcu65c02.bin --cpu 65c02
+python compiler/main.py examples/mcu65c02.s -o examples/mcu65c02.bin --cpu 65c02
 
 # 6800 example
-python main.py examples/mcu6800.s -o examples/mcu6800.bin --cpu 6800
-
-# 8086 example
-python main.py examples/hello_8086.s -o examples/hello_8086.bin --cpu 8086
+python compiler/main.py examples/mcu6800.s -o examples/mcu6800.bin --cpu 6800
 ```
 
 ## Command Line Options
