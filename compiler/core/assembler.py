@@ -26,7 +26,7 @@ class Assembler:
                     if not instr.label:
                         self.diagnostics.error(instr.line_num, f"Directive '{instr.directive}' requires a label.")
                         return False
-                    equ_value = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
+                    equ_value = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num, current_address)
                     if equ_value is None:
                         return False
                     if not self.symbol_table.add(instr.label, equ_value, instr.line_num):
@@ -35,7 +35,7 @@ class Assembler:
                     # Don't add label to symbol table again (already handled by EQU)
                     
                 elif directive_type == "origin_set":  # e.g., .ORG
-                    org_address = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
+                    org_address = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num, current_address)
                     if org_address is None:
                         return False
                     current_address = org_address
@@ -60,7 +60,7 @@ class Assembler:
                 elif directive_type == "storage_define":  # e.g., .DS
                     instr.address = current_address
                     # Size is the value of the operand (number of bytes to reserve)
-                    storage_size = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num)
+                    storage_size = evaluate_expression(instr.operand_value, self.symbol_table, instr.line_num, current_address)
                     if storage_size is None:
                         return False
                     instr.size = storage_size

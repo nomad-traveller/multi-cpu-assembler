@@ -3,11 +3,12 @@
 # Generated from 6800.json
 
 cpu_info:
-  name: '6800'
+  name: 6800
   description: Motorola 6800 8-bit microprocessor
   data_width: 8
   address_width: 16
   endianness: big
+  fill_byte: "0x01"
 addressing_modes:
   INHERENT: 0
   ACCUMULATOR_A: 1

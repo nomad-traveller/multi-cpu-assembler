@@ -31,15 +31,7 @@ class _LineParser:
         if not parse_text:
             return ParsedLine(label, None, None)
 
-        # Check for EQU directive without colon label
-        if label is None:
-            parts = parse_text.strip().split(maxsplit=2)
-            if len(parts) == 3 and parts[1].upper() == "EQU":
-                label = parts[0].upper()
-                mnemonic = "EQU"
-                operand_str = parts[2]
-                logger.debug(f"Parsed EQU with implicit label: '{label}' = '{operand_str}'")
-                return ParsedLine(label, mnemonic, operand_str)
+        # No special EQU handling needed - directives are detected by profile
 
         return self._extract_mnemonic_and_operand(parse_text, label, logger)
 
@@ -64,7 +56,24 @@ class _LineParser:
     def _extract_mnemonic_and_operand(self, text: str, existing_label: str | None, logger) -> ParsedLine:
         """Extracts the mnemonic and operand."""
         # Parse as a standard mnemonic and operand.
-        parts = text.strip().split(maxsplit=1)
+        parts = text.strip().split(maxsplit=2)
+        
+        # Handle special case: LABEL DIRECTIVE VALUE (without colon)
+        # This allows directives like EQU to be written as "LABEL EQU $1234"
+        if existing_label is None and len(parts) >= 3:
+            # This could be "LABEL DIRECTIVE VALUE" format
+            potential_label = parts[0].upper()
+            potential_directive = parts[1].upper()
+            # Check if the second part is a known directive that supports implicit labels
+            # For now, we'll handle EQU specifically, but this could be profile-driven
+            if potential_directive == "EQU":
+                label = potential_label
+                mnemonic = potential_directive
+                operand_str = parts[2]
+                logger.debug(f"Parsed directive with implicit label: '{label}' = '{operand_str}'")
+                return ParsedLine(label, mnemonic, operand_str)
+        
+        # Standard parsing: MNEMONIC [OPERAND]
         mnemonic = parts[0].upper()
         operand_str = parts[1] if len(parts) > 1 else None
         return ParsedLine(existing_label, mnemonic, operand_str)
@@ -187,7 +196,7 @@ class Parser:
         # Parse the instruction using the CPU profile
         try:
             if instr.mnemonic:
-                if instr.mnemonic.startswith('.') or instr.mnemonic == "EQU":
+                if self.cpu_profile.is_directive(instr.mnemonic):
                     instr.directive = instr.mnemonic
                     instr.mnemonic = None  # Clear mnemonic for directives
                     self.cpu_profile.parse_directive(instr, self)

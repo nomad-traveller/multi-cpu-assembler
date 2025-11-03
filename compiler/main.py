@@ -131,7 +131,7 @@ def main() -> bool:
     if assembler.assemble(program, args.start_address):
         output_file = args.output or f"{args.source_file}.bin"
         emitter.print_pass_listing("Final Assembly Listing", program)
-        emitter.write_binary(program, output_file)
+        emitter.write_binary(program, output_file, profile)
         diagnostics.print_summary()
         return True
     else:

@@ -104,6 +104,12 @@ class ConfigCPUProfile:
         """Get directive information including type and properties."""
         return self.directives.get(directive_name, {})
     
+    def is_directive(self, mnemonic: str) -> bool:
+        """Checks if a mnemonic is a directive according to profile."""
+        if not mnemonic:
+            return False
+        return mnemonic.upper() in self.directives
+    
     @property
     def validation_rules(self) -> dict:
         return self._profile_data.get("validation_rules", {})
@@ -449,7 +455,7 @@ class ConfigCPUProfile:
         
         if directive == "EQU":
             # For EQU, evaluate the expression and add to symbol table
-            equ_value = evaluate_expression(instruction.operand_value, symbol_table, instruction.line_num)
+            equ_value = evaluate_expression(instruction.operand_value, symbol_table, instruction.line_num, current_address)
             if equ_value is None:
                 raise ValueError(f"Failed to evaluate EQU expression")
             if not symbol_table.add(instruction.label, equ_value, instruction.line_num):
@@ -459,7 +465,7 @@ class ConfigCPUProfile:
             
         elif directive == ".ORG":
             # For .ORG, evaluate the expression and set new address
-            org_address = evaluate_expression(instruction.operand_value, symbol_table, instruction.line_num)
+            org_address = evaluate_expression(instruction.operand_value, symbol_table, instruction.line_num, current_address)
             if org_address is None:
                 raise ValueError(f"Failed to evaluate .ORG expression")
             instruction.address = org_address
@@ -488,7 +494,7 @@ class ConfigCPUProfile:
         if directive == ".BYTE":
             machine_code = []
             for v in instruction.operand_value:
-                val = evaluate_expression(v, symbol_table, instruction.line_num)
+                val = evaluate_expression(v, symbol_table, instruction.line_num, instruction.address)
                 if val is None:
                     self.diagnostics.error(instruction.line_num, f"Undefined symbol in .BYTE directive.")
                     return False

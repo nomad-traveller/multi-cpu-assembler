@@ -9,6 +9,7 @@
     data_width: 8,
     address_width: 16,
     endianness: "big",
+    fill_byte: "0x01",
   },
   addressing_modes: {
     INHERENT: 0,

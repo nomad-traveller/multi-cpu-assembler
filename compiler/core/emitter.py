@@ -24,7 +24,7 @@ class Emitter:
             self.diagnostics.info(f"{addr_str:<8} {size_str:<5} {bytes_str:<20} {instr.original_text}")
         self.diagnostics.info("") # Add a blank line for spacing
 
-    def write_binary(self, program, output_file):
+    def write_binary(self, program, output_file, profile):
         """Writes the assembled machine code to a binary file."""
         min_addr = float('inf')
         max_addr = float('-inf')
@@ -34,24 +34,33 @@ class Emitter:
                 max_addr = max(max_addr, instr.address + instr.size - 1)
 
         if min_addr != float('inf'):
-            mem_size = max_addr - min_addr + 1
-            data = bytearray([0xEA] * mem_size)  # Pad with NOP
+            # Convert to integers for calculation
+            min_addr_int = int(min_addr)
+            max_addr_int = int(max_addr)
+            mem_size = max_addr_int - min_addr_int + 1
+            # Get fill byte from profile, default to 0x00 if not specified
+            fill_byte_str = profile.cpu_info.get("fill_byte", "0x00")
+            try:
+                fill_byte = int(fill_byte_str, 0)
+            except ValueError:
+                fill_byte = 0x00  # Default to 0x00 on error
+            data = bytearray([fill_byte] * mem_size)  # Use the profile's fill byte
             for instr in program.instructions:
                 if instr.machine_code and instr.address is not None:
-                    offset = instr.address - min_addr
+                    offset = instr.address - min_addr_int
                     # Ensure offset is within bounds of data array
                     if offset >= 0 and (offset + len(instr.machine_code)) <= len(data):
                         data[offset:offset + len(instr.machine_code)] = instr.machine_code
                     else:
                         self.diagnostics.warning(instr.line_num, f"Instruction at ${instr.address:04X} ({instr.original_text}) falls outside calculated memory image range. Skipping.")
             try:
-                # Ensure the output directory exists
+                # Ensure to output directory exists
                 output_dir = os.path.dirname(output_file)
                 if output_dir and not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 with open(output_file, 'wb') as f:
                     f.write(data)
-                self.diagnostics.info(f"Machine code written to {output_file} ({mem_size} bytes, from ${min_addr:04X} to ${max_addr:04X})")
+                self.diagnostics.info(f"Machine code written to {output_file} ({mem_size} bytes, from ${min_addr_int:04X} to ${max_addr_int:04X})")
             except IOError as e:
                 self.diagnostics.error(None, f"Error writing binary to '{output_file}': {e}")
                 return False
